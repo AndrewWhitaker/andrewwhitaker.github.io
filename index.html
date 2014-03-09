@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>My Octopress Blog</title>
-  <meta name="author" content="Your Name">
+  <title>Andrew Whitaker</title>
+  <meta name="author" content="Andrew Whitaker">
 
   
-  <meta name="description" content=" Blog Archives Recent Posts ">
+  <meta name="description" content="As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was recently released, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -21,7 +21,7 @@
   <link rel="canonical" href="http://AndrewWhitaker.github.io">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="My Octopress Blog" type="application/atom+xml">
+  <link href="/atom.xml" rel="alternate" title="Andrew Whitaker" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
@@ -36,9 +36,7 @@
 
 <body   >
   <header role="banner"><hgroup>
-  <h1><a href="/">My Octopress Blog</a></h1>
-  
-    <h2>A blogging framework for hackers.</h2>
+  <h1><a href="/">Andrew Whitaker</a></h1>
   
 </hgroup>
 
@@ -66,6 +64,808 @@
       <div class="blog-index">
   
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-08T21:37:33-04:00" pubdate data-updated="true">Oct 8<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
+
+<h2>The <code>response</code> event</h2>
+
+<p>Previously, it wasn&rsquo;t possible to determine when a search had completed unless results were returned (in which case the <code>open</code> event was triggered). There are <a href="http://stackoverflow.com/a/4719848/497356">several ways to get around this limitation</a>, but none of them use autocomplete&rsquo;s API. This limitation made it hard to perform actions if the search returned zero results.</p>
+
+<p><strong>Here&rsquo;s what you would have had to do in jQueryUI 1.8:</strong></p>
+
+<figure class='code'><figcaption><span>Detecting no results in jQueryUI 1.8</span><a href='http://jsfiddle.net/qz29K/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">availableTags</span> <span class="o">=</span> <span class="p">[</span><span class="cm">/* array of items */</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#auto&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">source</span><span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">results</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">autocomplete</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">availableTags</span><span class="p">,</span> <span class="nx">request</span><span class="p">.</span><span class="nx">term</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">results</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;No results found!&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">empty</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nx">response</span><span class="p">(</span><span class="nx">results</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Here&rsquo;s what you can do in 1.9:</strong></p>
+
+<figure class='code'><figcaption><span>Detecting no results in jQueryUI 1.9</span><a href='http://jsfiddle.net/andrewwhitaker/AYRhE/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">availableTags</span> <span class="o">=</span> <span class="p">[</span><span class="cm">/* array of items*/</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#auto&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">source</span><span class="o">:</span> <span class="nx">availableTags</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">response</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">ui</span><span class="p">.</span><span class="nx">content</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;No results found!&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">empty</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Much cleaner. This works for an autocomplete-enabled input with a remote source as well:</p>
+
+<figure class='code'><figcaption><span>Detecting no results with a remote source</span><a href='http://jsfiddle.net/andrewwhitaker/J5rVP/1/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">source</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>            <span class="nx">url</span><span class="o">:</span> <span class="s2">&quot;http://api.stackexchange.com/2.1/users&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">data</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">pagesize</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">order</span><span class="o">:</span> <span class="s1">&#39;desc&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">sort</span><span class="o">:</span> <span class="s1">&#39;reputation&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">site</span><span class="o">:</span> <span class="s1">&#39;stackoverflow&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">inname</span><span class="o">:</span> <span class="nx">request</span><span class="p">.</span><span class="nx">term</span>
+</span><span class='line'>            <span class="p">},</span>
+</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span> <span class="s1">&#39;jsonp&#39;</span>
+</span><span class='line'>        <span class="p">}).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">items</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">response</span><span class="p">(</span><span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="k">return</span> <span class="nx">item</span><span class="p">.</span><span class="nx">display_name</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}));</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">response</span><span class="p">([]);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>    <span class="nx">delay</span><span class="o">:</span> <span class="mi">500</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">minLength</span><span class="o">:</span> <span class="mi">3</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">response</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">ui</span><span class="p">.</span><span class="nx">content</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;No results found&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">empty</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Synchronous <code>change</code> event</h2>
+
+<p>This is fixing a subtle, but important, limitation in 1.8&rsquo;s autocomplete implementation. The <code>change</code> event used a small timeout right after the <code>blur</code> occurred. Most of the time this didn&rsquo;t cause a problem, but if you wanted to validate that the user selected an item from the suggestion menu, the user could actually submit the form before the <code>change</code> event fired. This is best seen with an example (click the <strong>result</strong> tab inside the fiddle):</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/qz29K/83/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>If you select an item from the menu after searching, then click out of the field (enabling the submit button), then focus the input field again and change the input&rsquo;s value to something <em>not</em> in the suggestion list, you can submit the form.</p>
+
+<p>In 1.9, this works much better and you can prevent the user from submitting the form entirely:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/AYRhE/1/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>Try following the steps for the 1.8 example, and you should not be able to submit the form.</p>
+
+<h2>Support for <code>contentEditable</code></h2>
+
+<p>This enhancement allows you to attach autocomplete to a <code>contentEditable</code> element. This functionality was not possible in 1.8. This has some very cool applications that I&rsquo;ll explore in a later blog post, but here&rsquo;s a simple example:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/J5rVP/2/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p></p>
+
+<h2>Blurring a suggestion no longer changes the input&rsquo;s value</h2>
+
+<p>This one is hard to explain, but follow the steps outlined in the 1.8 fiddle below to see the problem:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/qz29K/84/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>Now, follow the same instructions in 1.9:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/AYRhE/2/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>See the difference? In 1.9, the input&rsquo;s value is not reset when the menu item is hovered over.</p>
+
+<h2>Added experimental <code>messages</code> option for accessibility</h2>
+
+<p>The jQueryUI folks explain this one better than I can show with an example:</p>
+
+<blockquote><p>We now use ARIA live regions to announce when results become available and how to navigate through the list of suggestions. The announcements can be configured via the messages option, which has two properties: noResults for when no items are returned and results for when at least one item is returned. In general, you would only need to change these options if you want the string to be written in a different language. The messages option is subject to change in future versions while we work on a full solution for string manipulation and internationalization across all plugins. If you&rsquo;re interested in the messages option, we encourage you to just read the source; the relevant code is at the very bottom of the autocomplete plugin and is only a few lines.</p></blockquote>
+
+<p>I&rsquo;m not an accessibility expert, so I had to look up what <em>ARIA live regions are</em>. <a href="https://developer.mozilla.org/en-US/docs/Accessibility/ARIA/ARIA_Live_Regions">MDN has a great explanation</a>:</p>
+
+<blockquote><p>In the past, a web page change could only be spoken in entirety which often annoyed a user, or by speaking very little to nothing, making some or all information inaccessible. Until recently, screen readers have not been able to improve this because no standardized markup existed to alert the screen reader to a change. ARIA live regions fill this gap and provide suggestions to screen readers regarding whether and how to interrupt users with a change.</p></blockquote>
+
+<p>So how does this apply to the autocomplete widget? Well, now when you search for an item, if you have a screen reader installed it will read you something like <em>&ldquo;1 result is available, use up and down arrow keys to navigate.&rdquo;</em>. Pretty cool, huh?</p>
+
+<p>I&rsquo;ve outlined each enhancement to jQueryUI autocomplete in the 1.9 release. There are some exciting possibilities, specifically with the <code>contentEditable</code> support and the exposure of the Menu widget as a first-class widget. I&rsquo;ll be sure to follow up on those topics in a subsequent post.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/">jQueryUI Autocomplete: Top 5 Sources of Confusion</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-29T14:31:58-04:00" pubdate data-updated="true">Sep 29<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
+
+<h2>jQuery Autocomplete vs. jQueryUI autocomplete</h2>
+
+<p><a href="http://bassistance.de/jquery-plugins/jquery-plugin-autocomplete/">jQuery autocomplete</a> is jQueryUI autocomplete&rsquo;s predecessor. Despite the multiple messages and disclaimers on the legacy plugin&rsquo;s page, there is <em>still</em> confusion about the documentation, functionality, and status of this plugin. For some reason, some folks do not notice the following message on Jörn Zaefferer&rsquo;s documentation page for the plugin:</p>
+
+<blockquote><p>This plugin is deprecated and not developed anymore. Its <a href="http://jqueryui.com/demos/autocomplete/">successor is part of jQuery UI</a>, and <a href="http://www.learningjquery.com/2010/06/autocomplete-migration-guide">this migration guide</a> explains how to get from this plugin to the new one. This page will remain as it is for reference, but won’t be updated anymore.</p></blockquote>
+
+<p>The link to the migration guide explains how to migrate your old code using the original, deprecated plugin with the new one provided by jQueryUI.</p>
+
+<h2>What format does my data need to be in?</h2>
+
+<p>Another source of confusion is exactly <em>what</em> format does the widget&rsquo;s data source need to take? This is easy to see after viewing a few examples and reading the overview tab on the documentation page.</p>
+
+<p>To summarize, the data that you send to the widget needs to be:</p>
+
+<ol>
+<li>An array of strings</li>
+<li>An array of objects. Each object should have a either a <code>label</code> property, a <code>value</code> property, or both.</li>
+</ol>
+
+
+<p>An important point on #2 is that the object can contain other properties (besides <code>label</code> or <code>value</code>). This comes in handy when doing custom things with data.</p>
+
+<h2>I am using a server-side source and my data isn&rsquo;t being filtered!</h2>
+
+<p>When you use a server-side resource, <em>you</em> are responsible for doing the filtering. Usually this occurs by building up a database query based on the term that the user searched for.</p>
+
+<p>If you don&rsquo;t want to filter your data with server-side code (which I highly recommend), you could retrieve all of the possible results via AJAX and then let the widget do the filtering. Here&rsquo;s an example using StackOverflow&rsquo;s API:</p>
+
+<figure class='code'><figcaption><span>Letting jQueryUI do the filtering</span><a href='http://jsfiddle.net/andrewwhitaker/ZBmM8/light/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">url</span><span class="o">:</span> <span class="s2">&quot;http://api.stackexchange.com/2.1/users&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">data</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">pagesize</span><span class="o">:</span> <span class="mi">100</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">order</span><span class="o">:</span> <span class="s1">&#39;desc&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">sort</span><span class="o">:</span> <span class="s1">&#39;reputation&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">site</span><span class="o">:</span> <span class="s1">&#39;stackoverflow&#39;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>    <span class="nx">dataType</span><span class="o">:</span> <span class="s2">&quot;jsonp&quot;</span>
+</span><span class='line'><span class="p">}).</span><span class="nx">success</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">source</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nx">user</span><span class="p">.</span><span class="nx">display_name</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">source</span><span class="o">:</span> <span class="nx">source</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This may not be ideal depending on the size of the data you are processing. You may want to handle the filtering on the server rather than bogging the browser down with filtering through thousands of results.</p>
+
+<h2>I&rsquo;m using a server-side resource that isn&rsquo;t returning data in the format that autocomplete is expecting. What should I do?</h2>
+
+<p>You can supply a callback function to the <code>source</code> parameter of autocomplete. This allows you to use virtually any source as long as you format it correctly before passing it to the <code>response</code> function that autocomplete uses to populate the results. Here&rsquo;s another example using the StackOverflow API:</p>
+
+<figure class='code'><figcaption><span>Using a function with the &#8220;source&#8221; option</span><a href='http://jsfiddle.net/andrewwhitaker/MGTKm/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">source</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>            <span class="nx">url</span><span class="o">:</span> <span class="s2">&quot;http://api.stackexchange.com/2.1/users&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">data</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">pagesize</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">order</span><span class="o">:</span> <span class="s1">&#39;desc&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">sort</span><span class="o">:</span> <span class="s1">&#39;reputation&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">site</span><span class="o">:</span> <span class="s1">&#39;stackoverflow&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">inname</span><span class="o">:</span> <span class="nx">request</span><span class="p">.</span><span class="nx">term</span>
+</span><span class='line'>            <span class="p">},</span>
+</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span> <span class="s1">&#39;jsonp&#39;</span>
+</span><span class='line'>        <span class="p">}).</span><span class="nx">success</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">results</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">return</span> <span class="nx">user</span><span class="p">.</span><span class="nx">display_name</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nx">response</span><span class="p">(</span><span class="nx">results</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The key here is to use <code>$.map</code> to transform the results into the format that the widget expects (described above).</p>
+
+<h2>I want to implement tagging functionality. How can I go about that?</h2>
+
+<p>This is the most complex of the 5, but it is doable. Check out the <a href="http://jqueryui.com/demos/autocomplete/#multiple">multiple values demo</a> for one way to do this.</p>
+
+<p>I&rsquo;ve demonstrated a more complex Google-plus like functionality in the answer to <a href="http://stackoverflow.com/q/7089406/497356">this question</a>. Here&rsquo;s an updated fiddle using the 2.1 version of the API.</p>
+
+<figure class='code'><figcaption><span>Tagging functionality</span><a href='http://jsfiddle.net/andrewwhitaker/LHNky/41/light/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">function</span> <span class="nx">split</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">val</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="sr">/@\s*/</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">function</span> <span class="nx">extractLast</span><span class="p">(</span><span class="nx">term</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">split</span><span class="p">(</span><span class="nx">term</span><span class="p">).</span><span class="nx">pop</span><span class="p">();</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">function</span> <span class="nx">getTags</span><span class="p">(</span><span class="nx">term</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">url</span><span class="o">:</span> <span class="s2">&quot;http://api.stackexchange.com/2.1/tags&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">data</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">inname</span><span class="o">:</span> <span class="nx">term</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">pagesize</span><span class="o">:</span> <span class="mi">5</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">order</span><span class="o">:</span> <span class="s1">&#39;desc&#39;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">sort</span><span class="o">:</span> <span class="s1">&#39;popular&#39;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">site</span><span class="o">:</span> <span class="s1">&#39;stackoverflow&#39;</span>
+</span><span class='line'>        <span class="p">},</span>
+</span><span class='line'>        <span class="nx">success</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span> <span class="s2">&quot;jsonp&quot;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#tags&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="c1">// don&#39;t navigate away from the field on tab when selecting an item</span>
+</span><span class='line'>    <span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s2">&quot;keydown&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">keyCode</span> <span class="o">===</span> <span class="nx">$</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">keyCode</span><span class="p">.</span><span class="nx">TAB</span> <span class="o">&amp;&amp;</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">data</span><span class="p">(</span><span class="s2">&quot;autocomplete&quot;</span><span class="p">).</span><span class="nx">menu</span><span class="p">.</span><span class="nx">active</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nx">event</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">source</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">term</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#loading&quot;</span><span class="p">).</span><span class="nx">show</span><span class="p">();</span>
+</span><span class='line'>                <span class="nx">getTags</span><span class="p">(</span><span class="nx">extractLast</span><span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">term</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">response</span><span class="p">(</span><span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">el</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                        <span class="k">return</span> <span class="p">{</span>
+</span><span class='line'>                            <span class="nx">value</span><span class="o">:</span> <span class="nx">el</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span>
+</span><span class='line'>                            <span class="nx">count</span><span class="o">:</span> <span class="nx">el</span><span class="p">.</span><span class="nx">count</span>
+</span><span class='line'>                        <span class="p">};</span>
+</span><span class='line'>                    <span class="p">}));</span>
+</span><span class='line'>                    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#loading&quot;</span><span class="p">).</span><span class="nx">hide</span><span class="p">();</span>
+</span><span class='line'>                <span class="p">});</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">},</span>
+</span><span class='line'>        <span class="nx">focus</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// prevent value inserted on focus</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">},</span>
+</span><span class='line'>        <span class="nx">select</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">terms</span> <span class="o">=</span> <span class="nx">split</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">value</span><span class="p">);</span>
+</span><span class='line'>            <span class="c1">// remove the current input</span>
+</span><span class='line'>            <span class="nx">terms</span><span class="p">.</span><span class="nx">pop</span><span class="p">();</span>
+</span><span class='line'>            <span class="c1">// add the selected item</span>
+</span><span class='line'>            <span class="nx">terms</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">ui</span><span class="p">.</span><span class="nx">item</span><span class="p">.</span><span class="nx">value</span><span class="p">);</span>
+</span><span class='line'>            <span class="c1">// add placeholder to get the comma-and-space at the end</span>
+</span><span class='line'>            <span class="nx">terms</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">this</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">terms</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}).</span><span class="nx">data</span><span class="p">(</span><span class="s2">&quot;autocomplete&quot;</span><span class="p">).</span><span class="nx">_renderItem</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ul</span><span class="p">,</span> <span class="nx">item</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;&lt;li&gt;&quot;</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="s2">&quot;item.autocomplete&quot;</span><span class="p">,</span> <span class="nx">item</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s2">&quot;&lt;a&gt;&quot;</span> <span class="o">+</span> <span class="nx">item</span><span class="p">.</span><span class="nx">label</span> <span class="o">+</span> <span class="s2">&quot;&amp;nbsp;&lt;span class=&#39;count&#39;&gt;(&quot;</span> <span class="o">+</span> <span class="nx">item</span><span class="p">.</span><span class="nx">count</span> <span class="o">+</span> <span class="s2">&quot;)&lt;/span&gt;&lt;/a&gt;&quot;</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="nx">appendTo</span><span class="p">(</span><span class="nx">ul</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This demo is also useful because it shows a custom display of each tag including the count. Type @j to see tags starting with &ldquo;j&rdquo;.</p>
+
+<p>jQueryUI autocomplete&rsquo;s API may look simple at first glance, but this is a very extensible and capable plugin. Most people&rsquo;s questions revolve around the <code>source</code> parameter for the plugin. Remember to look at your AJAX requests in Firebug or similar just to make sure the data you&rsquo;re supplying to the widget is what you expect.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A Simple jQuery Aggregation Plugin</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-12-22T18:39:02-05:00" pubdate data-updated="true">Dec 22<span>nd</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
+
+<p>Let&rsquo;s take a look with an example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">letters</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">working</span><span class="p">,</span> <span class="nx">element</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">working</span> <span class="o">?</span> <span class="nx">working</span> <span class="o">+</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">)</span> <span class="o">:</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">);</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here, we&rsquo;re building up a message from an array of numbers that correspond to letters of the alphabet. We supplied the aggregate function with a source and a function describing how we wanted to build the aggregate, based on the current value we&rsquo;re iterating over and the &ldquo;working&rdquo; aggregate (what we&rsquo;ve built up so far).</p>
+
+<p>The conditional operator inside the aggregate function is kind of awkward, so lets supply an initial &ldquo;seed&rdquo; value to the aggregate:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">letters</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="kd">function</span> <span class="p">(</span><span class="nx">working</span><span class="p">,</span> <span class="nx">element</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">working</span> <span class="o">+</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">);</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Finally, we may want to supply some sort of final transformation function to our aggregated value. With the aggregate plugin, you can supply a function that will transform the aggregated value before returning it:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">letters</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="kd">function</span> <span class="p">(</span><span class="nx">working</span><span class="p">,</span> <span class="nx">element</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">working</span> <span class="o">+</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">);</span>
+</span><span class='line'><span class="p">},</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">value</span><span class="p">.</span><span class="nx">toUpperCase</span><span class="p">();</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&rsquo;s pretty much it for <code>$.aggregate</code>. You should be able to get pretty creative with it.</p>
+
+<p><code>$.sum</code> is just a convenient way to call <code>$.aggregate</code>. After implementing <code>$.aggregate</code>, <code>$.sum</code> was pretty easy. <code>$.sum</code> sheds some parameters, but is much more readable if all you&rsquo;re doing is adding some values up:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">total</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">sum</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">]);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#total&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">total</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Much neater right? You can also supply a transformation function that should return the item to be &ldquo;summed&rdquo;:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">groceries</span> <span class="o">=</span> <span class="p">[</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;bread&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">2.50</span> <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;bologna&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">4.00</span> <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;cheddar cheese&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">3.50</span> <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;potato chips&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">3.00</span> <span class="p">}</span>
+</span><span class='line'><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">total</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">sum</span><span class="p">(</span><span class="nx">groceries</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">price</span><span class="p">;</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#total&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;$&quot;</span> <span class="o">+</span> <span class="nx">total</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&rsquo;s pretty much it for the &ldquo;static&rdquo; functions. Both <code>$.sum</code> and <code>$.aggregate</code> can take an object <em>or</em> an array of values to aggregate.</p>
+
+<p>There are also &ldquo;instance&rdquo; methods on jQuery objects. These methods operate on jQuery objects:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;td input:text&quot;</span><span class="p">).</span><span class="nx">on</span><span class="p">(</span><span class="s2">&quot;change&quot;</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">total</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;td input:text&quot;</span><span class="p">).</span><span class="nx">sum</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">quantity</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">value</span>
+</span><span class='line'>                <span class="p">,</span> <span class="nx">cost</span> <span class="o">=</span> <span class="nb">parseFloat</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">closest</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">&quot;.price&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(),</span> <span class="mi">10</span><span class="p">)</span> <span class="o">||</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">return</span> <span class="nx">quantity</span> <span class="o">*</span> <span class="nx">cost</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#total&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">total</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>(Aggregate follows the same pattern).</p>
+
+<p>I&rsquo;m also toying with the idea of adding $.min and $.max.</p>
+
+<p>If you want to download, view the source, or run the unit tests associated with the plugin, <a href="https://github.com/AndrewWhitaker/jQuery-Aggregate">I have it up on Github</a>. Minified version coming soon.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 Year of StackOverflow</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-11-12T23:16:46-05:00" pubdate data-updated="true">Nov 12<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>About one year ago this month I joined <a href="http://www.stackoverflow.com">StackOverflow</a> and started participating. I wanted to take a few minutes to reflect on my experience the site. First off, why did I start answering questions?</p>
+
+<ul>
+<li><p>A living portfolio; My StackOverflow profile is something that&rsquo;s constantly growing and that I can show to employers</p></li>
+<li><p>Learning. Just spending time on the site allows you to learn new things.</p></li>
+<li><p>Helping others. I use tons of free software every day. This is my way of giving back.</p></li>
+<li><p>Pick up new problem-solving skills. Seeing the ways <em>others</em> answer questions gives you a view into their thought process. Seeing solutions that you wouldn&rsquo;t necessarily have come up with yourself adds tools to your problem-solving toolbox.</p></li>
+</ul>
+
+
+<p>When I started out, answering questions was a horrifying prospect: <em>I&rsquo;m going to put something on a high traffic programming site for other people to vote on?</em> I was sure I&rsquo;d mess up and get downvoted. Over 500 answers later though (and a 15K reputation), my stage fright has subsided.</p>
+
+<p>I started out motivated by the reputation system (it&rsquo;s addicting). After a while though, there has to be another motivator. For me, that motivator is the knowledge that with an answer you might be helping thousands of people all over the world Googling for a problem. How cool is that? There&rsquo;s also the fact that <strong>you&rsquo;re learning too</strong> when you answer a question.</p>
+
+<p>I quickly figured out what makes a high-quality answer (beyond the qualities of a simply &ldquo;good&rdquo; answer):</p>
+
+<ul>
+<li><p>Provides a <strong>working</strong> code sample</p></li>
+<li><p>Provides a good explanation of that sample (just giving people code isn&rsquo;t helpful after all)</p></li>
+<li><p>Links to relevant documentation</p></li>
+<li><p>Link to a demo, if possible</p></li>
+</ul>
+
+
+<p>The last point (linking to a demo) turns out to be very important. If the asker can take your code and play around with it immediately, you&rsquo;re <em>much</em> more likely to get more upvotes and that coveted green check mark. It&rsquo;s hard to argue with a working example.</p>
+
+<p>For that reason, I quickly gravitated to the JavaScript, jQuery, and jQueryUI tags. With those tags, I can almost always provide a working example in an answer. JavaScript sandbox site <a href="http://www.jsfiddle.net">JSFiddle</a> proved invaluable for providing working examples.</p>
+
+<p>After spending some time in those tags, I noticed the &ldquo;<a href="http://meta.stackoverflow.com/q/9731/153691">fastest gun in the west</a>&rdquo; problem. Since I wanted to provide high-quality answers in crowded tags (where answers to simple questions are posted very quickly), I started to get more specific in the tags I watched.</p>
+
+<p>Specifically, I moved toward <a href="http://jqueryui.com/demos/autocomplete">jQueryUI-Autocomplete</a>. Not too many people were watching questions about that widget, so it gave me more time to come up with a high-quality answer. At the same time, jQueryUI is a popular enough framework that my answers did get attention.</p>
+
+<p>This is probably my biggest tip for new StackOverflow answerers: <strong>If you&rsquo;re overwhelmed by the quick answers and high activity in tags, find a specific type of question within that tag to focus on</strong>.</p>
+
+<p>I also set goals while on StackOverflow. I wanted to get 10K reputation by the end of the year (which I&rsquo;ve met and exceeded). I also wanted a silver badge (400 upvotes) in the jQuery tag. Setting goals like this keeps it interesting. You can set goals for each tag and increase your own knowledge of a particular tag substantially.</p>
+
+<p>My goals for next year include:</p>
+
+<ul>
+<li><p>Getting a gold badge in jQuery (1000 upvotes)</p></li>
+<li><p>Getting a silver badge in C# (yep, I need to branch out)</p></li>
+<li><p>Edit 600 posts</p></li>
+</ul>
+
+
+<p>The most valuable thing I&rsquo;ve gotten out of StackOverflow over the last year? Better communication skills. I believe my ability to communicate a technical problem with other technical people has improved substantially. Part of providing a good answer is providing a clear explanation. This skill translates <em>directly</em> into the professional world.</p>
+
+<p>Good luck out there, and don&rsquo;t hesitate to sign-up and start answering.</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
     
     <a href="/blog/archives">Blog Archives</a>
@@ -77,6 +877,22 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/">jQueryUI Autocomplete: Top 5 Sources of Confusion</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A Simple jQuery Aggregation Plugin</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 Year of StackOverflow</a>
+      </li>
     
   </ul>
 </section>
@@ -91,7 +907,7 @@
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2014 - Your Name -
+  Copyright &copy; 2014 - Andrew Whitaker -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 
@@ -103,16 +919,6 @@
 
 
 
-
-  <script type="text/javascript">
-    (function(){
-      var twitterWidgets = document.createElement('script');
-      twitterWidgets.type = 'text/javascript';
-      twitterWidgets.async = true;
-      twitterWidgets.src = '//platform.twitter.com/widgets.js';
-      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
-    })();
-  </script>
 
 
 
