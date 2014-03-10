@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Programming | Andrew Whitaker]]></title>
   <link href="http://AndrewWhitaker.github.io/blog/categories/programming/atom.xml" rel="self"/>
   <link href="http://AndrewWhitaker.github.io/"/>
-  <updated>2014-03-09T20:56:42-04:00</updated>
+  <updated>2014-03-09T21:23:17-04:00</updated>
   <id>http://AndrewWhitaker.github.io/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -163,7 +163,7 @@ $("#auto").autocomplete({
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[jQueryUI Autocomplete: Top 5 Sources of Confusion]]></title>
+    <title type="html"><![CDATA[jQueryUI Autocomplete: Top 5 sources of confusion]]></title>
     <link href="http://AndrewWhitaker.github.io/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/"/>
     <updated>2012-09-29T14:31:58-04:00</updated>
     <id>http://AndrewWhitaker.github.io/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
@@ -356,7 +356,7 @@ function split(val) {</p>
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[jQuery.aggregate: A Simple jQuery Aggregation Plugin]]></title>
+    <title type="html"><![CDATA[jQuery.aggregate: A simple jQuery aggregation plugin]]></title>
     <link href="http://AndrewWhitaker.github.io/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/"/>
     <updated>2011-12-22T18:39:02-05:00</updated>
     <id>http://AndrewWhitaker.github.io/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
@@ -478,7 +478,7 @@ $(document).ready(function () {</p>
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[Retrospective: 1 Year of StackOverflow]]></title>
+    <title type="html"><![CDATA[Retrospective: 1 year of StackOverflow]]></title>
     <link href="http://AndrewWhitaker.github.io/blog/2011/11/12/retrospective-1-year-of-stackoverflow/"/>
     <updated>2011-11-12T23:16:46-05:00</updated>
     <id>http://AndrewWhitaker.github.io/blog/2011/11/12/retrospective-1-year-of-stackoverflow</id>
