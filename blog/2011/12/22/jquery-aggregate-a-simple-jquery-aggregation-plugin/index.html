@@ -323,6 +323,103 @@
 
 
 
+<section>
+  <h1>Stack Overflow</h1>
+  <a style="text-decoration:none;" href="http://stackoverflow.com/users/497356/andrew-whitaker">
+    <img src="http://stackoverflow.com/users/flair/497356.png" width="208" height="58" alt="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers">
+  </a>
+  <h2>Recent Answers:</h2> 
+  <ul id="stackoverflow-answers">
+  </ul>
+</section>
+<style>
+#stackoverflow-answers > li {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+#stackoverflow-answers > li > .score {
+    margin-right: 5px;
+    padding: 3px 6px 6px 6px;
+}
+
+#stackoverflow-answers > li > .accepted {
+    color: #f2f2f2;
+    background-color: #4b4b4b;
+}
+
+#stackoverflow-answers > li > a {
+    white-space: nowrap;
+}
+</style>
+<script type="text/javascript">
+(function ($) {
+    var answersUrl = 'http://api.stackexchange.com/2.2/users/' + 497356 + '/answers'
+        , questionsUrl = 'http://api.stackexchange.com/2.2/answers/{ids}/questions';
+    
+    function makeRequest(url, options) {
+        return $.ajax({
+            url: url,
+            data: $.extend({
+                site: 'stackoverflow'
+            }, options)
+        });
+    }
+    
+    function getAnswers() {
+        return makeRequest(answersUrl, {
+            pagesize: 5,
+            order: 'desc',
+            site: 'stackoverflow',
+            sort: 'creation',
+            filter: '!9WgJfoIGL'
+        });
+    }
+
+    function getQuestions(answerData) {
+        var questionsDeferred = $.Deferred()
+        , answerItems = answerData.items
+        , answerIds = $.map(answerItems, function (answer) {
+            return answer.answer_id;
+        }).join(';');
+        
+        makeRequest(questionsUrl.replace("{ids}", answerIds))
+        .done(function (data) {
+            questionsDeferred.resolve(data, answerItems);
+        });
+        
+        return questionsDeferred;
+    }
+    
+    function processQuestions(questionData, answers) {
+        var listItems;
+    
+        $.each(questionData.items, function (_, question) {
+            var answer = $.grep(answers, function (ans) {
+                return ans.question_id === question.question_id;
+            })[0];
+                        
+            answer.title = question.title;
+        });
+
+        listItems = $.map(answers, function (answer) {
+            var score = '<span class="score ' + (answer.is_accepted ? 'accepted' : '') + '">' + answer.score + '</span>'
+                , link = '<a href="' + answer.link + '">' + answer.title + '</a>';
+                
+            return '<li>' + score + link + '</li>';
+        }).join('');
+
+        $('#stackoverflow-answers').html(listItems);    
+    }    
+        
+    getAnswers()
+        .then(getQuestions)
+        .done(processQuestions);
+    
+})(jQuery);
+</script>
+
   
 </aside>
 
