@@ -1,98 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
 
-<!DOCTYPE html>
-<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
-<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
-<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  <title>Andrew Whitaker</title>
-  <meta name="author" content="Andrew Whitaker">
-
-  
-  <meta name="description" content="As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was recently released, &hellip;">
-  
-
-  <!-- http://t.co/dKP3o1e -->
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  
-  <link rel="canonical" href="http://blog.andrewawhitaker.com/">
-  <link href="/favicon.png" rel="icon">
-  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="/javascripts/ender.js"></script>
-  <script src="/javascripts/octopress.js" type="text/javascript"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-  <link href="/atom.xml" rel="alternate" title="Andrew Whitaker" type="application/atom+xml">
-  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-
-  
-
-</head>
-
-<body   >
-  <header role="banner"><hgroup>
-  <h1><a href="/">Andrew Whitaker</a></h1>
-  
-</hgroup>
-
-</header>
-  <nav role="navigation"><ul class="subscription" data-subscription="rss">
-  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
-  
-</ul>
-  
-<form action="http://google.com/search" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="q" value="site:blog.andrewawhitaker.com" />
-    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
-  </fieldset>
-</form>
-  
-<ul class="main-navigation">
-  <li><a href="/">Blog</a></li>
-  <li><a href="/blog/archives">Archives</a></li>
-</ul>
-
-</nav>
-  <div id="main">
-    <div id="content">
-      <div class="blog-index">
-  
-  
-  
-    <article>
-      
-  <header>
+  <title><![CDATA[Andrew Whitaker]]></title>
+  <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
+  <link href="http://blog.andrewawhitaker.com/"/>
+  <updated>2014-03-12T22:41:58-04:00</updated>
+  <id>http://blog.andrewawhitaker.com/</id>
+  <author>
+    <name><![CDATA[Andrew Whitaker]]></name>
     
-      <h1 class="entry-title"><a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
 
   
-
-
-<time datetime="2012-10-08T21:37:33-04:00" pubdate data-updated="true">Oct 8<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
+  <entry>
+    <title type="html"><![CDATA[jQueryUI Autocomplete 1.9]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/"/>
+    <updated>2012-10-08T21:37:33-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9</id>
+    <content type="html"><![CDATA[<p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
 
 <h2>The <code>response</code> event</h2>
 
@@ -283,42 +209,15 @@
 <p>So how does this apply to the autocomplete widget? Well, now when you search for an item, if you have a screen reader installed it will read you something like <em>&ldquo;1 result is available, use up and down arrow keys to navigate.&rdquo;</em>. Pretty cool, huh?</p>
 
 <p>I&rsquo;ve outlined each enhancement to jQueryUI autocomplete in the 1.9 release. There are some exciting possibilities, specifically with the <code>contentEditable</code> support and the exposure of the Menu widget as a first-class widget. I&rsquo;ll be sure to follow up on those topics in a subsequent post.</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/">jQueryUI Autocomplete: Top 5 Sources of Confusion</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-09-29T14:31:58-04:00" pubdate data-updated="true">Sep 29<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
+  <entry>
+    <title type="html"><![CDATA[jQueryUI Autocomplete: Top 5 sources of confusion]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/"/>
+    <updated>2012-09-29T14:31:58-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
+    <content type="html"><![CDATA[<p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
 
 <h2>jQuery Autocomplete vs. jQueryUI autocomplete</h2>
 
@@ -590,42 +489,15 @@
 <p>This demo is also useful because it shows a custom display of each tag including the count. Type @j to see tags starting with &ldquo;j&rdquo;.</p>
 
 <p>jQueryUI autocomplete&rsquo;s API may look simple at first glance, but this is a very extensible and capable plugin. Most people&rsquo;s questions revolve around the <code>source</code> parameter for the plugin. Remember to look at your AJAX requests in Firebug or similar just to make sure the data you&rsquo;re supplying to the widget is what you expect.</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A Simple jQuery Aggregation Plugin</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-12-22T18:39:02-05:00" pubdate data-updated="true">Dec 22<span>nd</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
+  <entry>
+    <title type="html"><![CDATA[jQuery.aggregate: A simple jQuery aggregation plugin]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/"/>
+    <updated>2011-12-22T18:39:02-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
+    <content type="html"><![CDATA[<p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
 
 <p>Let&rsquo;s take a look with an example:</p>
 
@@ -776,42 +648,15 @@
 <p>I&rsquo;m also toying with the idea of adding $.min and $.max.</p>
 
 <p>If you want to download, view the source, or run the unit tests associated with the plugin, <a href="https://github.com/AndrewWhitaker/jQuery-Aggregate">I have it up on Github</a>. Minified version coming soon.</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 Year of StackOverflow</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-11-12T23:16:46-05:00" pubdate data-updated="true">Nov 12<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>About one year ago this month I joined <a href="http://www.stackoverflow.com">StackOverflow</a> and started participating. I wanted to take a few minutes to reflect on my experience the site. First off, why did I start answering questions?</p>
+  <entry>
+    <title type="html"><![CDATA[Retrospective: 1 year of StackOverflow]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow/"/>
+    <updated>2011-11-12T23:16:46-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow</id>
+    <content type="html"><![CDATA[<p>About one year ago this month I joined <a href="http://www.stackoverflow.com">StackOverflow</a> and started participating. I wanted to take a few minutes to reflect on my experience the site. First off, why did I start answering questions?</p>
 
 <ul>
 <li><p>A living portfolio; My StackOverflow profile is something that&rsquo;s constantly growing and that I can show to employers</p></li>
@@ -859,169 +704,7 @@
 <p>The most valuable thing I&rsquo;ve gotten out of StackOverflow over the last year? Better communication skills. I believe my ability to communicate a technical problem with other technical people has improved substantially. Part of providing a good answer is providing a clear explanation. This skill translates <em>directly</em> into the professional world.</p>
 
 <p>Good luck out there, and don&rsquo;t hesitate to sign-up and start answering.</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  <div class="pagination">
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
-</div>
-<aside class="sidebar">
-  
-    <section>
-  <h1>Recent Posts</h1>
-  <ul id="recent_posts">
-    
-      <li class="post">
-        <a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/">jQueryUI Autocomplete: Top 5 sources of confusion</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A simple jQuery aggregation plugin</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 year of StackOverflow</a>
-      </li>
-    
-  </ul>
-</section>
-
-
-
-
-
-<section>
-  <h1>Stack Overflow</h1>
-  <a style="text-decoration:none;" href="http://stackoverflow.com/users/497356/andrew-whitaker">
-    <img src="http://stackoverflow.com/users/flair/497356.png" width="208" height="58" alt="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers">
-  </a>
-  <h2>Recent Answers:</h2> 
-  <ul id="stackoverflow-answers">
-  </ul>
-</section>
-<style>
-#stackoverflow-answers > li {
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-}
-
-#stackoverflow-answers > li > .score {
-    margin-right: 5px;
-    padding: 3px 6px 6px 6px;
-}
-
-#stackoverflow-answers > li > .accepted {
-    color: #ffffff;
-    background-color: #21759b;
-}
-
-#stackoverflow-answers > li > a {
-    white-space: nowrap;
-}
-</style>
-<script type="text/javascript">
-(function ($) {
-    var answersUrl = 'http://api.stackexchange.com/2.2/users/' + 497356 + '/answers'
-        , questionsUrl = 'http://api.stackexchange.com/2.2/answers/{ids}/questions';
-    
-    function makeRequest(url, options) {
-        return $.ajax({
-            url: url,
-            data: $.extend({
-                site: 'stackoverflow'
-            }, options)
-        });
-    }
-    
-    function getAnswers() {
-        return makeRequest(answersUrl, {
-            pagesize: 5,
-            order: 'desc',
-            site: 'stackoverflow',
-            sort: 'creation',
-            filter: '!9WgJfoIGL'
-        });
-    }
-
-    function getQuestions(answerData) {
-        var questionsDeferred = $.Deferred()
-        , answerItems = answerData.items
-        , answerIds = $.map(answerItems, function (answer) {
-            return answer.answer_id;
-        }).join(';');
-        
-        makeRequest(questionsUrl.replace("{ids}", answerIds))
-        .done(function (data) {
-            questionsDeferred.resolve(data, answerItems);
-        });
-        
-        return questionsDeferred;
-    }
-    
-    function processQuestions(questionData, answers) {
-        var listItems;
-    
-        $.each(questionData.items, function (_, question) {
-            var answer = $.grep(answers, function (ans) {
-                return ans.question_id === question.question_id;
-            })[0];
-                        
-            answer.title = question.title;
-        });
-
-        listItems = $.map(answers, function (answer) {
-            var score = '<span class="score ' + (answer.is_accepted ? 'accepted' : '') + '">' + answer.score + '</span>'
-                , link = '<a href="' + answer.link + '">' + answer.title + '</a>';
-                
-            return '<li>' + score + link + '</li>';
-        }).join('');
-
-        $('#stackoverflow-answers').html(listItems);    
-    }    
-        
-    getAnswers()
-        .then(getQuestions)
-        .done(processQuestions);
-    
-})(jQuery);
-</script>
-
-  
-</aside>
-
-    </div>
-  </div>
-  <footer role="contentinfo"><p>
-  Copyright &copy; 2014 - Andrew Whitaker -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
-  - <span class="credit">Theme by <a href="http://www.gehaxelt.in">Gehaxelt</a></span>
-  <span class="credit">and <a href="http://www.it-solutions-neef.de">IT Solutions Neef</a></span>
-</p>
-
-</footer>
-  
-
-
-
-
-
-
-
-
-
-
-
-</body>
-</html>
+</feed>

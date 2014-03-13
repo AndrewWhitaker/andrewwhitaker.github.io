@@ -1,0 +1,488 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>jQueryUI Autocomplete 1.9 - Andrew Whitaker</title>
+  <meta name="author" content="Andrew Whitaker">
+
+  
+  <meta name="description" content="As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was recently released, &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <link href="/atom.xml" rel="alternate" title="Andrew Whitaker" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Andrew Whitaker</a></h1>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.andrewawhitaker.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">jQueryUI Autocomplete 1.9</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-08T21:37:33-04:00" pubdate data-updated="true">Oct 8<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
+
+<h2>The <code>response</code> event</h2>
+
+<p>Previously, it wasn&rsquo;t possible to determine when a search had completed unless results were returned (in which case the <code>open</code> event was triggered). There are <a href="http://stackoverflow.com/a/4719848/497356">several ways to get around this limitation</a>, but none of them use autocomplete&rsquo;s API. This limitation made it hard to perform actions if the search returned zero results.</p>
+
+<p><strong>Here&rsquo;s what you would have had to do in jQueryUI 1.8:</strong></p>
+
+<figure class='code'><figcaption><span>Detecting no results in jQueryUI 1.8</span><a href='http://jsfiddle.net/qz29K/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">availableTags</span> <span class="o">=</span> <span class="p">[</span><span class="cm">/* array of items */</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#auto&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">source</span><span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">results</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">autocomplete</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">availableTags</span><span class="p">,</span> <span class="nx">request</span><span class="p">.</span><span class="nx">term</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">results</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;No results found!&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">empty</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nx">response</span><span class="p">(</span><span class="nx">results</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Here&rsquo;s what you can do in 1.9:</strong></p>
+
+<figure class='code'><figcaption><span>Detecting no results in jQueryUI 1.9</span><a href='http://jsfiddle.net/andrewwhitaker/AYRhE/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">availableTags</span> <span class="o">=</span> <span class="p">[</span><span class="cm">/* array of items*/</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#auto&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">source</span><span class="o">:</span> <span class="nx">availableTags</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">response</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">ui</span><span class="p">.</span><span class="nx">content</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;No results found!&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#no-results&quot;</span><span class="p">).</span><span class="nx">empty</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Much cleaner. This works for an autocomplete-enabled input with a remote source as well:</p>
+
+<figure class='code'><figcaption><span>Detecting no results with a remote source</span><a href='http://jsfiddle.net/andrewwhitaker/J5rVP/1/'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">source</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>            <span class="nx">url</span><span class="o">:</span> <span class="s2">&quot;http://api.stackexchange.com/2.1/users&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">data</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">pagesize</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">order</span><span class="o">:</span> <span class="s1">&#39;desc&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">sort</span><span class="o">:</span> <span class="s1">&#39;reputation&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">site</span><span class="o">:</span> <span class="s1">&#39;stackoverflow&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">inname</span><span class="o">:</span> <span class="nx">request</span><span class="p">.</span><span class="nx">term</span>
+</span><span class='line'>            <span class="p">},</span>
+</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span> <span class="s1">&#39;jsonp&#39;</span>
+</span><span class='line'>        <span class="p">}).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">items</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">response</span><span class="p">(</span><span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="k">return</span> <span class="nx">item</span><span class="p">.</span><span class="nx">display_name</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}));</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">response</span><span class="p">([]);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>    <span class="nx">delay</span><span class="o">:</span> <span class="mi">500</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">minLength</span><span class="o">:</span> <span class="mi">3</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">response</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">ui</span><span class="p">.</span><span class="nx">content</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;No results found&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">empty</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Synchronous <code>change</code> event</h2>
+
+<p>This is fixing a subtle, but important, limitation in 1.8&rsquo;s autocomplete implementation. The <code>change</code> event used a small timeout right after the <code>blur</code> occurred. Most of the time this didn&rsquo;t cause a problem, but if you wanted to validate that the user selected an item from the suggestion menu, the user could actually submit the form before the <code>change</code> event fired. This is best seen with an example (click the <strong>result</strong> tab inside the fiddle):</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/qz29K/83/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>If you select an item from the menu after searching, then click out of the field (enabling the submit button), then focus the input field again and change the input&rsquo;s value to something <em>not</em> in the suggestion list, you can submit the form.</p>
+
+<p>In 1.9, this works much better and you can prevent the user from submitting the form entirely:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/AYRhE/1/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>Try following the steps for the 1.8 example, and you should not be able to submit the form.</p>
+
+<h2>Support for <code>contentEditable</code></h2>
+
+<p>This enhancement allows you to attach autocomplete to a <code>contentEditable</code> element. This functionality was not possible in 1.8. This has some very cool applications that I&rsquo;ll explore in a later blog post, but here&rsquo;s a simple example:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/J5rVP/2/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p></p>
+
+<h2>Blurring a suggestion no longer changes the input&rsquo;s value</h2>
+
+<p>This one is hard to explain, but follow the steps outlined in the 1.8 fiddle below to see the problem:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/qz29K/84/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>Now, follow the same instructions in 1.9:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/AYRhE/2/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>See the difference? In 1.9, the input&rsquo;s value is not reset when the menu item is hovered over.</p>
+
+<h2>Added experimental <code>messages</code> option for accessibility</h2>
+
+<p>The jQueryUI folks explain this one better than I can show with an example:</p>
+
+<blockquote><p>We now use ARIA live regions to announce when results become available and how to navigate through the list of suggestions. The announcements can be configured via the messages option, which has two properties: noResults for when no items are returned and results for when at least one item is returned. In general, you would only need to change these options if you want the string to be written in a different language. The messages option is subject to change in future versions while we work on a full solution for string manipulation and internationalization across all plugins. If you&rsquo;re interested in the messages option, we encourage you to just read the source; the relevant code is at the very bottom of the autocomplete plugin and is only a few lines.</p></blockquote>
+
+<p>I&rsquo;m not an accessibility expert, so I had to look up what <em>ARIA live regions are</em>. <a href="https://developer.mozilla.org/en-US/docs/Accessibility/ARIA/ARIA_Live_Regions">MDN has a great explanation</a>:</p>
+
+<blockquote><p>In the past, a web page change could only be spoken in entirety which often annoyed a user, or by speaking very little to nothing, making some or all information inaccessible. Until recently, screen readers have not been able to improve this because no standardized markup existed to alert the screen reader to a change. ARIA live regions fill this gap and provide suggestions to screen readers regarding whether and how to interrupt users with a change.</p></blockquote>
+
+<p>So how does this apply to the autocomplete widget? Well, now when you search for an item, if you have a screen reader installed it will read you something like <em>&ldquo;1 result is available, use up and down arrow keys to navigate.&rdquo;</em>. Pretty cool, huh?</p>
+
+<p>I&rsquo;ve outlined each enhancement to jQueryUI autocomplete in the 1.9 release. There are some exciting possibilities, specifically with the <code>contentEditable</code> support and the exposure of the Menu widget as a first-class widget. I&rsquo;ll be sure to follow up on those topics in a subsequent post.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">andrew</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-08T21:37:33-04:00" pubdate data-updated="true">Oct 8<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javascript/'>JavaScript</a>, <a class='category' href='/blog/categories/programming/'>Programming</a>, <a class='category' href='/blog/categories/jquery/'>jQuery</a>, <a class='category' href='/blog/categories/jqueryui/'>jQueryUI</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/" title="Previous Post: jQueryUI Autocomplete: Top 5 sources of confusion">&laquo; jQueryUI Autocomplete: Top 5 sources of confusion</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/">jQueryUI Autocomplete: Top 5 sources of confusion</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A simple jQuery aggregation plugin</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 year of StackOverflow</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+<section>
+  <h1>Stack Overflow</h1>
+  <a style="text-decoration:none;" href="http://stackoverflow.com/users/497356/andrew-whitaker">
+    <img src="http://stackoverflow.com/users/flair/497356.png" width="208" height="58" alt="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers">
+  </a>
+  <h2>Recent Answers:</h2> 
+  <ul id="stackoverflow-answers">
+  </ul>
+</section>
+<style>
+#stackoverflow-answers > li {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+#stackoverflow-answers > li > .score {
+    margin-right: 5px;
+    padding: 3px 6px 6px 6px;
+}
+
+#stackoverflow-answers > li > .accepted {
+    color: #ffffff;
+    background-color: #21759b;
+}
+
+#stackoverflow-answers > li > a {
+    white-space: nowrap;
+}
+</style>
+<script type="text/javascript">
+(function ($) {
+    var answersUrl = 'http://api.stackexchange.com/2.2/users/' + 497356 + '/answers'
+        , questionsUrl = 'http://api.stackexchange.com/2.2/answers/{ids}/questions';
+    
+    function makeRequest(url, options) {
+        return $.ajax({
+            url: url,
+            data: $.extend({
+                site: 'stackoverflow'
+            }, options)
+        });
+    }
+    
+    function getAnswers() {
+        return makeRequest(answersUrl, {
+            pagesize: 5,
+            order: 'desc',
+            site: 'stackoverflow',
+            sort: 'creation',
+            filter: '!9WgJfoIGL'
+        });
+    }
+
+    function getQuestions(answerData) {
+        var questionsDeferred = $.Deferred()
+        , answerItems = answerData.items
+        , answerIds = $.map(answerItems, function (answer) {
+            return answer.answer_id;
+        }).join(';');
+        
+        makeRequest(questionsUrl.replace("{ids}", answerIds))
+        .done(function (data) {
+            questionsDeferred.resolve(data, answerItems);
+        });
+        
+        return questionsDeferred;
+    }
+    
+    function processQuestions(questionData, answers) {
+        var listItems;
+    
+        $.each(questionData.items, function (_, question) {
+            var answer = $.grep(answers, function (ans) {
+                return ans.question_id === question.question_id;
+            })[0];
+                        
+            answer.title = question.title;
+        });
+
+        listItems = $.map(answers, function (answer) {
+            var score = '<span class="score ' + (answer.is_accepted ? 'accepted' : '') + '">' + answer.score + '</span>'
+                , link = '<a href="' + answer.link + '">' + answer.title + '</a>';
+                
+            return '<li>' + score + link + '</li>';
+        }).join('');
+
+        $('#stackoverflow-answers').html(listItems);    
+    }    
+        
+    getAnswers()
+        .then(getQuestions)
+        .done(processQuestions);
+    
+})(jQuery);
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Andrew Whitaker -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+  - <span class="credit">Theme by <a href="http://www.gehaxelt.in">Gehaxelt</a></span>
+  <span class="credit">and <a href="http://www.it-solutions-neef.de">IT Solutions Neef</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

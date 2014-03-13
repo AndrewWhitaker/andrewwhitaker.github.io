@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>jQuery.aggregate: A simple jQuery aggregation plugin - Andrew Whitaker</title>
+  <meta name="author" content="Andrew Whitaker">
+
+  
+  <meta name="description" content="I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <link href="/atom.xml" rel="alternate" title="Andrew Whitaker" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Andrew Whitaker</a></h1>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.andrewawhitaker.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">jQuery.aggregate: A Simple jQuery Aggregation Plugin</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-12-22T18:39:02-05:00" pubdate data-updated="true">Dec 22<span>nd</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
+
+<p>Let&rsquo;s take a look with an example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">letters</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">working</span><span class="p">,</span> <span class="nx">element</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">working</span> <span class="o">?</span> <span class="nx">working</span> <span class="o">+</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">)</span> <span class="o">:</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">);</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here, we&rsquo;re building up a message from an array of numbers that correspond to letters of the alphabet. We supplied the aggregate function with a source and a function describing how we wanted to build the aggregate, based on the current value we&rsquo;re iterating over and the &ldquo;working&rdquo; aggregate (what we&rsquo;ve built up so far).</p>
+
+<p>The conditional operator inside the aggregate function is kind of awkward, so lets supply an initial &ldquo;seed&rdquo; value to the aggregate:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">letters</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="kd">function</span> <span class="p">(</span><span class="nx">working</span><span class="p">,</span> <span class="nx">element</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">working</span> <span class="o">+</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">);</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Finally, we may want to supply some sort of final transformation function to our aggregated value. With the aggregate plugin, you can supply a function that will transform the aggregated value before returning it:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">letters</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="kd">function</span> <span class="p">(</span><span class="nx">working</span><span class="p">,</span> <span class="nx">element</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">working</span> <span class="o">+</span> <span class="nx">letters</span><span class="p">.</span><span class="nx">charAt</span><span class="p">(</span><span class="nx">element</span><span class="p">);</span>
+</span><span class='line'><span class="p">},</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">value</span><span class="p">.</span><span class="nx">toUpperCase</span><span class="p">();</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#message&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&rsquo;s pretty much it for <code>$.aggregate</code>. You should be able to get pretty creative with it.</p>
+
+<p><code>$.sum</code> is just a convenient way to call <code>$.aggregate</code>. After implementing <code>$.aggregate</code>, <code>$.sum</code> was pretty easy. <code>$.sum</code> sheds some parameters, but is much more readable if all you&rsquo;re doing is adding some values up:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">total</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">sum</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">4</span><span class="p">]);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#total&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">total</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Much neater right? You can also supply a transformation function that should return the item to be &ldquo;summed&rdquo;:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">groceries</span> <span class="o">=</span> <span class="p">[</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;bread&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">2.50</span> <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;bologna&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">4.00</span> <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;cheddar cheese&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">3.50</span> <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;potato chips&#39;</span><span class="p">,</span> <span class="nx">price</span><span class="o">:</span> <span class="mf">3.00</span> <span class="p">}</span>
+</span><span class='line'><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">total</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">sum</span><span class="p">(</span><span class="nx">groceries</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">price</span><span class="p">;</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#total&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;$&quot;</span> <span class="o">+</span> <span class="nx">total</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&rsquo;s pretty much it for the &ldquo;static&rdquo; functions. Both <code>$.sum</code> and <code>$.aggregate</code> can take an object <em>or</em> an array of values to aggregate.</p>
+
+<p>There are also &ldquo;instance&rdquo; methods on jQuery objects. These methods operate on jQuery objects:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;td input:text&quot;</span><span class="p">).</span><span class="nx">on</span><span class="p">(</span><span class="s2">&quot;change&quot;</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">total</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;td input:text&quot;</span><span class="p">).</span><span class="nx">sum</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">quantity</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">value</span>
+</span><span class='line'>                <span class="p">,</span> <span class="nx">cost</span> <span class="o">=</span> <span class="nb">parseFloat</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">closest</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s2">&quot;.price&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(),</span> <span class="mi">10</span><span class="p">)</span> <span class="o">||</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">return</span> <span class="nx">quantity</span> <span class="o">*</span> <span class="nx">cost</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#total&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">total</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>(Aggregate follows the same pattern).</p>
+
+<p>I&rsquo;m also toying with the idea of adding $.min and $.max.</p>
+
+<p>If you want to download, view the source, or run the unit tests associated with the plugin, <a href="https://github.com/AndrewWhitaker/jQuery-Aggregate">I have it up on Github</a>. Minified version coming soon.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">andrew</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-12-22T18:39:02-05:00" pubdate data-updated="true">Dec 22<span>nd</span>, 2011</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javascript/'>JavaScript</a>, <a class='category' href='/blog/categories/programming/'>Programming</a>, <a class='category' href='/blog/categories/jquery/'>jQuery</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/" title="Previous Post: Retrospective: 1 year of StackOverflow">&laquo; Retrospective: 1 year of StackOverflow</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/" title="Next Post: jQueryUI Autocomplete: Top 5 sources of confusion">jQueryUI Autocomplete: Top 5 sources of confusion &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/">jQueryUI Autocomplete: Top 5 sources of confusion</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A simple jQuery aggregation plugin</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 year of StackOverflow</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+<section>
+  <h1>Stack Overflow</h1>
+  <a style="text-decoration:none;" href="http://stackoverflow.com/users/497356/andrew-whitaker">
+    <img src="http://stackoverflow.com/users/flair/497356.png" width="208" height="58" alt="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers">
+  </a>
+  <h2>Recent Answers:</h2> 
+  <ul id="stackoverflow-answers">
+  </ul>
+</section>
+<style>
+#stackoverflow-answers > li {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+#stackoverflow-answers > li > .score {
+    margin-right: 5px;
+    padding: 3px 6px 6px 6px;
+}
+
+#stackoverflow-answers > li > .accepted {
+    color: #ffffff;
+    background-color: #21759b;
+}
+
+#stackoverflow-answers > li > a {
+    white-space: nowrap;
+}
+</style>
+<script type="text/javascript">
+(function ($) {
+    var answersUrl = 'http://api.stackexchange.com/2.2/users/' + 497356 + '/answers'
+        , questionsUrl = 'http://api.stackexchange.com/2.2/answers/{ids}/questions';
+    
+    function makeRequest(url, options) {
+        return $.ajax({
+            url: url,
+            data: $.extend({
+                site: 'stackoverflow'
+            }, options)
+        });
+    }
+    
+    function getAnswers() {
+        return makeRequest(answersUrl, {
+            pagesize: 5,
+            order: 'desc',
+            site: 'stackoverflow',
+            sort: 'creation',
+            filter: '!9WgJfoIGL'
+        });
+    }
+
+    function getQuestions(answerData) {
+        var questionsDeferred = $.Deferred()
+        , answerItems = answerData.items
+        , answerIds = $.map(answerItems, function (answer) {
+            return answer.answer_id;
+        }).join(';');
+        
+        makeRequest(questionsUrl.replace("{ids}", answerIds))
+        .done(function (data) {
+            questionsDeferred.resolve(data, answerItems);
+        });
+        
+        return questionsDeferred;
+    }
+    
+    function processQuestions(questionData, answers) {
+        var listItems;
+    
+        $.each(questionData.items, function (_, question) {
+            var answer = $.grep(answers, function (ans) {
+                return ans.question_id === question.question_id;
+            })[0];
+                        
+            answer.title = question.title;
+        });
+
+        listItems = $.map(answers, function (answer) {
+            var score = '<span class="score ' + (answer.is_accepted ? 'accepted' : '') + '">' + answer.score + '</span>'
+                , link = '<a href="' + answer.link + '">' + answer.title + '</a>';
+                
+            return '<li>' + score + link + '</li>';
+        }).join('');
+
+        $('#stackoverflow-answers').html(listItems);    
+    }    
+        
+    getAnswers()
+        .then(getQuestions)
+        .done(processQuestions);
+    
+})(jQuery);
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Andrew Whitaker -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+  - <span class="credit">Theme by <a href="http://www.gehaxelt.in">Gehaxelt</a></span>
+  <span class="credit">and <a href="http://www.it-solutions-neef.de">IT Solutions Neef</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

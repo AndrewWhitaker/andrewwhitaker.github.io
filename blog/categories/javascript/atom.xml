@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: JavaScript | Andrew Whitaker]]></title>
+  <link href="http://blog.andrewawhitaker.com/blog/categories/javascript/atom.xml" rel="self"/>
+  <link href="http://blog.andrewawhitaker.com/"/>
+  <updated>2014-03-12T22:41:58-04:00</updated>
+  <id>http://blog.andrewawhitaker.com/</id>
+  <author>
+    <name><![CDATA[Andrew Whitaker]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[jQueryUI Autocomplete 1.9]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/"/>
+    <updated>2012-10-08T21:37:33-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9</id>
+    <content type="html"><![CDATA[<p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
+
+<h2>The <code>response</code> event</h2>
+
+<p>Previously, it wasn&rsquo;t possible to determine when a search had completed unless results were returned (in which case the <code>open</code> event was triggered). There are <a href="http://stackoverflow.com/a/4719848/497356">several ways to get around this limitation</a>, but none of them use autocomplete&rsquo;s API. This limitation made it hard to perform actions if the search returned zero results.</p>
+
+<p><strong>Here&rsquo;s what you would have had to do in jQueryUI 1.8:</strong></p>
+
+<p>``` javascript Detecting no results in jQueryUI 1.8 <a href="http://jsfiddle.net/qz29K/">http://jsfiddle.net/qz29K/</a></p>
+
+<pre><code>var availableTags = [/* array of items */];
+
+$("#auto").autocomplete({
+    source: function (request, response) {
+        var results = $.ui.autocomplete.filter(availableTags, request.term);
+
+        if (!results.length) {
+            $("#no-results").text("No results found!");
+        } else {
+            $("#no-results").empty();
+        }
+
+        response(results);
+    }
+}); 
+</code></pre>
+
+<p>```</p>
+
+<p><strong>Here&rsquo;s what you can do in 1.9:</strong></p>
+
+<p>``` javascript Detecting no results in jQueryUI 1.9 <a href="http://jsfiddle.net/andrewwhitaker/AYRhE/">http://jsfiddle.net/andrewwhitaker/AYRhE/</a></p>
+
+<pre><code>var availableTags = [/* array of items*/];
+
+$("#auto").autocomplete({
+    source: availableTags,
+    response: function(event, ui) {
+        if (!ui.content.length) {
+            $("#no-results").text("No results found!");
+        } else {
+            $("#no-results").empty();
+        }
+    }
+});
+</code></pre>
+
+<p>```</p>
+
+<p>Much cleaner. This works for an autocomplete-enabled input with a remote source as well:</p>
+
+<p>``` javascript Detecting no results with a remote source <a href="http://jsfiddle.net/andrewwhitaker/J5rVP/1/">http://jsfiddle.net/andrewwhitaker/J5rVP/1/</a></p>
+
+<pre><code>$("input").autocomplete({
+    source: function(request, response) {
+        $.ajax({
+            url: "http://api.stackexchange.com/2.1/users",
+            data: {
+                pagesize: 10,
+                order: 'desc',
+                sort: 'reputation',
+                site: 'stackoverflow',
+                inname: request.term
+            },
+            dataType: 'jsonp'
+        }).done(function(data) {
+            if (data.items) {
+                response($.map(data.items, function(item) {
+                    return item.display_name;
+                }));
+            } else {
+                response([]);
+            }
+        });
+    },
+    delay: 500,
+    minLength: 3,
+    response: function(event, ui) {
+        if (!ui.content.length) {
+            $("#message").text("No results found");
+        } else {
+            $("#message").empty();
+        }
+    }
+});
+</code></pre>
+
+<p>```</p>
+
+<h2>Synchronous <code>change</code> event</h2>
+
+<p>This is fixing a subtle, but important, limitation in 1.8&rsquo;s autocomplete implementation. The <code>change</code> event used a small timeout right after the <code>blur</code> occurred. Most of the time this didn&rsquo;t cause a problem, but if you wanted to validate that the user selected an item from the suggestion menu, the user could actually submit the form before the <code>change</code> event fired. This is best seen with an example (click the <strong>result</strong> tab inside the fiddle):</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/qz29K/83/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>If you select an item from the menu after searching, then click out of the field (enabling the submit button), then focus the input field again and change the input&rsquo;s value to something <em>not</em> in the suggestion list, you can submit the form.</p>
+
+<p>In 1.9, this works much better and you can prevent the user from submitting the form entirely:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/AYRhE/1/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>Try following the steps for the 1.8 example, and you should not be able to submit the form.</p>
+
+<h2>Support for <code>contentEditable</code></h2>
+
+<p>This enhancement allows you to attach autocomplete to a <code>contentEditable</code> element. This functionality was not possible in 1.8. This has some very cool applications that I&rsquo;ll explore in a later blog post, but here&rsquo;s a simple example:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/J5rVP/2/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p></p>
+
+<h2>Blurring a suggestion no longer changes the input&rsquo;s value</h2>
+
+<p>This one is hard to explain, but follow the steps outlined in the 1.8 fiddle below to see the problem:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/qz29K/84/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>Now, follow the same instructions in 1.9:</p>
+
+<iframe style="width: 100%; height: 300px" src="http://jsfiddle.net/andrewwhitaker/AYRhE/2/embedded/" allowfullscreen="allowfullscreen" frameborder="0"></iframe>
+
+
+<p>See the difference? In 1.9, the input&rsquo;s value is not reset when the menu item is hovered over.</p>
+
+<h2>Added experimental <code>messages</code> option for accessibility</h2>
+
+<p>The jQueryUI folks explain this one better than I can show with an example:</p>
+
+<blockquote><p>We now use ARIA live regions to announce when results become available and how to navigate through the list of suggestions. The announcements can be configured via the messages option, which has two properties: noResults for when no items are returned and results for when at least one item is returned. In general, you would only need to change these options if you want the string to be written in a different language. The messages option is subject to change in future versions while we work on a full solution for string manipulation and internationalization across all plugins. If you&rsquo;re interested in the messages option, we encourage you to just read the source; the relevant code is at the very bottom of the autocomplete plugin and is only a few lines.</p></blockquote>
+
+<p>I&rsquo;m not an accessibility expert, so I had to look up what <em>ARIA live regions are</em>. <a href="https://developer.mozilla.org/en-US/docs/Accessibility/ARIA/ARIA_Live_Regions">MDN has a great explanation</a>:</p>
+
+<blockquote><p>In the past, a web page change could only be spoken in entirety which often annoyed a user, or by speaking very little to nothing, making some or all information inaccessible. Until recently, screen readers have not been able to improve this because no standardized markup existed to alert the screen reader to a change. ARIA live regions fill this gap and provide suggestions to screen readers regarding whether and how to interrupt users with a change.</p></blockquote>
+
+<p>So how does this apply to the autocomplete widget? Well, now when you search for an item, if you have a screen reader installed it will read you something like <em>&ldquo;1 result is available, use up and down arrow keys to navigate.&rdquo;</em>. Pretty cool, huh?</p>
+
+<p>I&rsquo;ve outlined each enhancement to jQueryUI autocomplete in the 1.9 release. There are some exciting possibilities, specifically with the <code>contentEditable</code> support and the exposure of the Menu widget as a first-class widget. I&rsquo;ll be sure to follow up on those topics in a subsequent post.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[jQueryUI Autocomplete: Top 5 sources of confusion]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/"/>
+    <updated>2012-09-29T14:31:58-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
+    <content type="html"><![CDATA[<p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
+
+<h2>jQuery Autocomplete vs. jQueryUI autocomplete</h2>
+
+<p><a href="http://bassistance.de/jquery-plugins/jquery-plugin-autocomplete/">jQuery autocomplete</a> is jQueryUI autocomplete&rsquo;s predecessor. Despite the multiple messages and disclaimers on the legacy plugin&rsquo;s page, there is <em>still</em> confusion about the documentation, functionality, and status of this plugin. For some reason, some folks do not notice the following message on Jörn Zaefferer&rsquo;s documentation page for the plugin:</p>
+
+<blockquote><p>This plugin is deprecated and not developed anymore. Its <a href="http://jqueryui.com/demos/autocomplete/">successor is part of jQuery UI</a>, and <a href="http://www.learningjquery.com/2010/06/autocomplete-migration-guide">this migration guide</a> explains how to get from this plugin to the new one. This page will remain as it is for reference, but won’t be updated anymore.</p></blockquote>
+
+<p>The link to the migration guide explains how to migrate your old code using the original, deprecated plugin with the new one provided by jQueryUI.</p>
+
+<h2>What format does my data need to be in?</h2>
+
+<p>Another source of confusion is exactly <em>what</em> format does the widget&rsquo;s data source need to take? This is easy to see after viewing a few examples and reading the overview tab on the documentation page.</p>
+
+<p>To summarize, the data that you send to the widget needs to be:</p>
+
+<ol>
+<li>An array of strings</li>
+<li>An array of objects. Each object should have a either a <code>label</code> property, a <code>value</code> property, or both.</li>
+</ol>
+
+
+<p>An important point on #2 is that the object can contain other properties (besides <code>label</code> or <code>value</code>). This comes in handy when doing custom things with data.</p>
+
+<h2>I am using a server-side source and my data isn&rsquo;t being filtered!</h2>
+
+<p>When you use a server-side resource, <em>you</em> are responsible for doing the filtering. Usually this occurs by building up a database query based on the term that the user searched for.</p>
+
+<p>If you don&rsquo;t want to filter your data with server-side code (which I highly recommend), you could retrieve all of the possible results via AJAX and then let the widget do the filtering. Here&rsquo;s an example using StackOverflow&rsquo;s API:</p>
+
+<p>``` javascript Letting jQueryUI do the filtering <a href="http://jsfiddle.net/andrewwhitaker/ZBmM8/light/">http://jsfiddle.net/andrewwhitaker/ZBmM8/light/</a>
+$.ajax({</p>
+
+<pre><code>url: "http://api.stackexchange.com/2.1/users",
+data: {
+    pagesize: 100,
+    order: 'desc',
+    sort: 'reputation',
+    site: 'stackoverflow'
+},
+dataType: "jsonp"
+</code></pre>
+
+<p>}).success(function (data) {</p>
+
+<pre><code>console.dir(data);
+var source = $.map(data.items, function (user) {
+    return user.display_name;
+});
+
+$("input").autocomplete({
+    source: source
+});
+</code></pre>
+
+<p>});
+```</p>
+
+<p>This may not be ideal depending on the size of the data you are processing. You may want to handle the filtering on the server rather than bogging the browser down with filtering through thousands of results.</p>
+
+<h2>I&rsquo;m using a server-side resource that isn&rsquo;t returning data in the format that autocomplete is expecting. What should I do?</h2>
+
+<p>You can supply a callback function to the <code>source</code> parameter of autocomplete. This allows you to use virtually any source as long as you format it correctly before passing it to the <code>response</code> function that autocomplete uses to populate the results. Here&rsquo;s another example using the StackOverflow API:</p>
+
+<p>``` javascript Using a function with the &ldquo;source&rdquo; option <a href="http://jsfiddle.net/andrewwhitaker/MGTKm/">http://jsfiddle.net/andrewwhitaker/MGTKm/</a>
+$(&ldquo;input&rdquo;).autocomplete({</p>
+
+<pre><code>source: function(request, response) {
+    $.ajax({
+        url: "http://api.stackexchange.com/2.1/users",
+        data: {
+            pagesize: 10,
+            order: 'desc',
+            sort: 'reputation',
+            site: 'stackoverflow',
+            inname: request.term
+        },
+        dataType: 'jsonp'
+    }).success(function(data) {
+        var results = $.map(data.items, function(user) {
+            return user.display_name;
+        });
+
+        response(results);
+    });
+}
+</code></pre>
+
+<p>});
+```</p>
+
+<p>The key here is to use <code>$.map</code> to transform the results into the format that the widget expects (described above).</p>
+
+<h2>I want to implement tagging functionality. How can I go about that?</h2>
+
+<p>This is the most complex of the 5, but it is doable. Check out the <a href="http://jqueryui.com/demos/autocomplete/#multiple">multiple values demo</a> for one way to do this.</p>
+
+<p>I&rsquo;ve demonstrated a more complex Google-plus like functionality in the answer to <a href="http://stackoverflow.com/q/7089406/497356">this question</a>. Here&rsquo;s an updated fiddle using the 2.1 version of the API.</p>
+
+<p>``` javascript Tagging functionality <a href="http://jsfiddle.net/andrewwhitaker/LHNky/41/light/">http://jsfiddle.net/andrewwhitaker/LHNky/41/light/</a>
+function split(val) {</p>
+
+<pre><code>return val.split(/@\s*/);
+</code></pre>
+
+<p>}</p>
+
+<p>function extractLast(term) {</p>
+
+<pre><code>return split(term).pop();
+</code></pre>
+
+<p>}</p>
+
+<p>function getTags(term, callback) {</p>
+
+<pre><code>$.ajax({
+    url: "http://api.stackexchange.com/2.1/tags",
+    data: {
+        inname: term,
+        pagesize: 5,
+        order: 'desc',
+        sort: 'popular',
+        site: 'stackoverflow'
+    },
+    success: callback,
+    dataType: "jsonp"
+});    
+</code></pre>
+
+<p>}</p>
+
+<p>$(document).ready(function() {</p>
+
+<pre><code>$("#tags")
+// don't navigate away from the field on tab when selecting an item
+.bind("keydown", function(event) {
+    if (event.keyCode === $.ui.keyCode.TAB &amp;&amp; $(this).data("autocomplete").menu.active) {
+
+        event.preventDefault();
+    }
+}).autocomplete({
+    source: function(request, response) {
+        if (request.term.indexOf("@") &gt;= 0) {
+            $("#loading").show();
+            getTags(extractLast(request.term), function(data) {
+                response($.map(data.items, function(el) {
+                    return {
+                        value: el.name,
+                        count: el.count
+                    };
+                }));
+                $("#loading").hide();                    
+            });
+        }
+    },
+    focus: function() {
+        // prevent value inserted on focus
+        return false;
+    },
+    select: function(event, ui) {
+        var terms = split(this.value);
+        // remove the current input
+        terms.pop();
+        // add the selected item
+        terms.push(ui.item.value);
+        // add placeholder to get the comma-and-space at the end
+        terms.push("");
+        this.value = terms.join("");
+        return false;
+    }
+}).data("autocomplete")._renderItem = function(ul, item) {
+    return $("&lt;li&gt;")
+        .data("item.autocomplete", item)
+        .append("&lt;a&gt;" + item.label + "&amp;nbsp;&lt;span class='count'&gt;(" + item.count + ")&lt;/span&gt;&lt;/a&gt;")
+        .appendTo(ul);
+};
+</code></pre>
+
+<p>});
+```</p>
+
+<p>This demo is also useful because it shows a custom display of each tag including the count. Type @j to see tags starting with &ldquo;j&rdquo;.</p>
+
+<p>jQueryUI autocomplete&rsquo;s API may look simple at first glance, but this is a very extensible and capable plugin. Most people&rsquo;s questions revolve around the <code>source</code> parameter for the plugin. Remember to look at your AJAX requests in Firebug or similar just to make sure the data you&rsquo;re supplying to the widget is what you expect.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[jQuery.aggregate: A simple jQuery aggregation plugin]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/"/>
+    <updated>2011-12-22T18:39:02-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
+    <content type="html"><![CDATA[<p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
+
+<p>Let&rsquo;s take a look with an example:</p>
+
+<p>``` javascript</p>
+
+<pre><code>var letters = "abcdefghijklmnopqrstuvwxyz";
+
+
+var message = $.aggregate([0, 6, 6, 17, 4, 6, 0, 19, 4], function (working, element) {
+    return working ? working + letters.charAt(element) : letters.charAt(element);
+});
+
+$("#message").text(message);
+</code></pre>
+
+<p>```
+Here, we&rsquo;re building up a message from an array of numbers that correspond to letters of the alphabet. We supplied the aggregate function with a source and a function describing how we wanted to build the aggregate, based on the current value we&rsquo;re iterating over and the &ldquo;working&rdquo; aggregate (what we&rsquo;ve built up so far).</p>
+
+<p>The conditional operator inside the aggregate function is kind of awkward, so lets supply an initial &ldquo;seed&rdquo; value to the aggregate:</p>
+
+<p>``` javascript
+var letters = &ldquo;abcdefghijklmnopqrstuvwxyz&rdquo;;</p>
+
+<p>var message = $.aggregate([0, 6, 6, 17, 4, 6, 0, 19, 4], &lsquo;&rsquo;,  function (working, element) {</p>
+
+<pre><code>return working + letters.charAt(element);
+</code></pre>
+
+<p>});</p>
+
+<p>$(&ldquo;#message&rdquo;).text(message);
+```</p>
+
+<p>Finally, we may want to supply some sort of final transformation function to our aggregated value. With the aggregate plugin, you can supply a function that will transform the aggregated value before returning it:</p>
+
+<p>``` javascript
+var letters = &ldquo;abcdefghijklmnopqrstuvwxyz&rdquo;;</p>
+
+<p>var message = $.aggregate([0, 6, 6, 17, 4, 6, 0, 19, 4], &lsquo;&rsquo;,  function (working, element) {</p>
+
+<pre><code>return working + letters.charAt(element);
+</code></pre>
+
+<p>}, function (value) {</p>
+
+<pre><code>return value.toUpperCase();
+</code></pre>
+
+<p>});</p>
+
+<p>$(&ldquo;#message&rdquo;).text(message);
+```</p>
+
+<p>That&rsquo;s pretty much it for <code>$.aggregate</code>. You should be able to get pretty creative with it.</p>
+
+<p><code>$.sum</code> is just a convenient way to call <code>$.aggregate</code>. After implementing <code>$.aggregate</code>, <code>$.sum</code> was pretty easy. <code>$.sum</code> sheds some parameters, but is much more readable if all you&rsquo;re doing is adding some values up:</p>
+
+<p>``` javascript
+var total = $.sum([0, 6, 6, 17, 4, 6, 0, 19, 4]);</p>
+
+<p>$(&ldquo;#total&rdquo;).text(total);
+```</p>
+
+<p>Much neater right? You can also supply a transformation function that should return the item to be &ldquo;summed&rdquo;:</p>
+
+<p>``` javascript
+var groceries = [</p>
+
+<pre><code>{ name: 'bread', price: 2.50 },
+{ name: 'bologna', price: 4.00 },
+{ name: 'cheddar cheese', price: 3.50 },
+{ name: 'potato chips', price: 3.00 }
+</code></pre>
+
+<p>];</p>
+
+<p>var total = $.sum(groceries, function () {</p>
+
+<pre><code>return this.price;
+</code></pre>
+
+<p>});</p>
+
+<p>$(&ldquo;#total&rdquo;).text(&ldquo;$&rdquo; + total);
+```</p>
+
+<p>That&rsquo;s pretty much it for the &ldquo;static&rdquo; functions. Both <code>$.sum</code> and <code>$.aggregate</code> can take an object <em>or</em> an array of values to aggregate.</p>
+
+<p>There are also &ldquo;instance&rdquo; methods on jQuery objects. These methods operate on jQuery objects:</p>
+
+<p>``` javascript
+$(document).ready(function () {</p>
+
+<pre><code>$("td input:text").on("change", function () {
+    var total = $("td input:text").sum(function () {
+        var quantity = this.value
+            , cost = parseFloat($(this).closest("tr").find(".price").text(), 10) || 0;
+
+        return quantity * cost;
+    });
+
+    $("#total").text(total);
+});
+</code></pre>
+
+<p>});
+```</p>
+
+<p>(Aggregate follows the same pattern).</p>
+
+<p>I&rsquo;m also toying with the idea of adding $.min and $.max.</p>
+
+<p>If you want to download, view the source, or run the unit tests associated with the plugin, <a href="https://github.com/AndrewWhitaker/jQuery-Aggregate">I have it up on Github</a>. Minified version coming soon.</p>
+]]></content>
+  </entry>
+  
+</feed>
