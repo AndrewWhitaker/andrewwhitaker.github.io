@@ -9,7 +9,7 @@
   <meta name="author" content="Andrew Whitaker">
 
   
-  <meta name="description" content="As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was recently released, &hellip;">
+  <meta name="description" content="In this post, I&rsquo;ll outline some basics on QueryOver, including the NHibernate types involved and basic query structure. I&rsquo;ll also talk &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -63,6 +63,199 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/16/queryover-series-part-2-basics/">QueryOver Series - Part 2: Basics and Joining</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-16T12:05:33-04:00" pubdate data-updated="true">Mar 16<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In this post, I&rsquo;ll outline some basics on QueryOver, including the NHibernate types involved and basic query structure. I&rsquo;ll also talk about joining using <code>JoinAlias</code> and <code>JoinQueryOver</code></p>
+
+<h4><code>IQueryOver&lt;TRoot, TSubType&gt;</code></h4>
+
+<p>If you look closely at the types involved when writing QueryOver queries, you&rsquo;ll notice that there are two generic type parameters: <code>TRoot</code> and <code>TSubType</code>. Why would the API need two type parameters?</p>
+
+<p>When you create a QueryOver object using <code>session.QueryOver&lt;TRoot&gt;</code>, <code>TRoot</code> and <code>TSubType</code> are the same. <code>TRoot</code> stays the same as you build the query, and <code>TSubType</code> changes as you use <code>JoinQueryOver</code> to join to other tables. This is worth mentioning before we go into more depth on building queries.</p>
+
+<p>In general:</p>
+
+<ul>
+<li>Operations <em>except</em> for <code>.Select</code> use <code>TSubType</code> as the type parameter for lambda expressions you pass to QueryOver methods</li>
+<li><code>TRoot</code> is the type parameter for lambda expressions you use in the <code>.Select</code> step of the query.</li>
+</ul>
+
+
+<p>Here&rsquo;s an example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Person</span><span class="p">&gt;()</span>
+</span><span class='line'><span class="c1">// TRoot and TSubType are Person                         </span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Addresses</span><span class="p">)</span>
+</span><span class='line'>    <span class="c1">// TRoot is Person, TSubtype is Address</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">a</span> <span class="p">=&gt;</span> <span class="n">a</span><span class="p">.</span><span class="n">ModifiedDate</span> <span class="p">==</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">)</span>
+</span><span class='line'>        <span class="c1">// Where accepts an Expression&lt;Func&lt;TSubtype, bool&gt;&gt;</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Id</span><span class="p">);</span>
+</span><span class='line'>        <span class="c1">// Select accepts an Expression&lt;Func&lt;TRoot, object&gt;&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4><code>JoinAlias</code> and <code>JoinQueryOver</code></h4>
+
+<p>Since we&rsquo;re on the subject of <code>TRoot</code> and <code>TSubType</code>, now is a good opportunity to talk about <code>JoinAlias</code> and <code>JoinQueryOver</code></p>
+
+<h5><code>JoinAlias</code></h5>
+
+<p><code>JoinAlias</code> adds a join to your query without changing <code>TSubType</code>. This is useful if you&rsquo;re joining to more than one table from a source table:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">BusinessEntityAddress</span> <span class="n">addressAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'><span class="n">BusinessEntityContact</span> <span class="n">contactAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Person</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinAlias</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Addresses</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">addressAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinAlias</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Contacts</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">contactAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">FirstName</span> <span class="p">==</span> <span class="s">&quot;Andrew&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="cm">/* etc */</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In this example, since we want to join to <code>Address</code> and <code>Contact</code>, we can use <code>JoinAlias</code> twice, since <code>TSubType</code> doesn&rsquo;t change.</p>
+
+<p>The second parameter (in this particular overload) to <code>.JoinAlias</code> is a lambda expression that creates an alias. You can use the alias throughout the query in other lambda expressions when you don&rsquo;t want to use either <code>TRoot</code> or <code>TSubType</code>.</p>
+
+<h5><code>JoinQueryOver</code></h5>
+
+<p><code>JoinQueryOver</code> adds a join to your query and <em>changes</em> <code>TSubType</code>. You can also use an alias with <code>JoinQueryOver</code>, but with simpler queries it&rsquo;s often not necessary:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Person</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Addresses</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">a</span> <span class="p">=&gt;</span> <span class="n">a</span><span class="p">.</span><span class="n">ModifiedDate</span> <span class="p">==</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">FirstName</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Notice that the lambda expression passed to the <code>.Where</code> method has the signature <code>Expression&lt;Func&lt;Address, bool&gt;&gt;</code>. The call to <code>JoinQueryOver</code> changed <code>TSubType</code>. This can make for more concise, easier to read code, since you don&rsquo;t need to declare aliases for every join you do.</p>
+
+<p><code>JoinAlias</code> and <code>JoinQueryOver</code> are interchangeable, as far as I know. You can write the same query using either one, it&rsquo;s just that the number of aliases you declare changes based on which you use. Typically I choose whichever one avoids creating and managing more aliases. This means using <code>JoinQueryOver</code> when possible, but that&rsquo;s personal preference.</p>
+
+<h4>Summary:</h4>
+
+<ul>
+<li><code>IQueryOver</code> is a generic type with two type parameters <code>TRoot</code> and <code>TSubType</code></li>
+<li><code>.Select</code> operates on <code>TRoot</code> while other QueryOver methods operate on <code>TSubType</code>.</li>
+<li><code>TRoot</code> stays the same as you&rsquo;re building a query, but <code>TSubType</code> changes when you join using <code>JoinQueryOver</code></li>
+<li><code>JoinQueryOver</code> and <code>JoinAlias</code> add joins to your query. <code>JoinAlias</code> doesn&rsquo;t change <code>TSubType</code>, but <code>JoinQueryOver</code> does.</li>
+<li>You can use aliases when building a query to refer to properties that don&rsquo;t belong to <code>TRoot</code> or <code>TSubType</code></li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/12/queryover-series-part-1-why-queryover/">QueryOver Series - Part 1: Why QueryOver?</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-12T22:50:58-04:00" pubdate data-updated="true">Mar 12<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>QueryOver is a strongly-typed querying technology built on top of NHibernate&rsquo;s Criteria API. It was introduced in NHibernate 3.0. QueryOver is actually quite powerful and flexible, as I aim to demonstrate in this series of blog posts.</p>
+
+<p>There is not much in the way of official documentation for NHibernate in general, and even less for QueryOver. The only article on NHForge that I can find is <a href="http://nhforge.org/blogs/nhibernate/archive/2009/12/17/queryover-in-nh-3-0.aspx">here</a>. While this is a good read for an introduction, it really doesn&rsquo;t do QueryOver justice. There&rsquo;s a lot of capability that&rsquo;s not demonstrated there.</p>
+
+<h3>Overview of available querying technologies</h3>
+
+<p>If you&rsquo;re using NHibernate, you&rsquo;re probably aware that you have several options when you go to write a query:</p>
+
+<ul>
+<li>SQL (via <code>CreateSQLQuery</code>)</li>
+<li>HQL</li>
+<li>LINQ to NHibernate</li>
+<li>Criteria</li>
+<li>QueryOver</li>
+</ul>
+
+
+<p>Now, in some cases you <em>must</em> use SQL or HQL because of the type of query you&rsquo;re writing. For the vast majority of simple to intermediate queries though, LINQ to NHibernate, QueryOver, and Criteria all seem like viable options.</p>
+
+<h3>Why use QueryOver?</h3>
+
+<p>Let&rsquo;s assume that you&rsquo;re working on a large project and using magic strings everywhere to write queries makes you a bit nervous. People are changing property and class names every day, potentially breaking queries across your application. In this case, your better-looking options are LINQ to NHibernate and QueryOver.</p>
+
+<p>If you&rsquo;ve tried to use LINQ to NHibernate for anything remotely complex, you know you&rsquo;ll run into problems quickly. Currently you <a href="http://stackoverflow.com/q/15590021/497356">can&rsquo;t</a> <a href="http://stackoverflow.com/q/13624959/497356">even</a> <a href="https://nhibernate.jira.com/browse/NH-2379">do a left join</a>. What this means is if you have a left join in your query, or even if you think you&rsquo;ll need one one day, you can&rsquo;t currently use LINQ to NHibernate.</p>
+
+<p>I&rsquo;m not trying to pick on NHibernate&rsquo;s LINQ provider or minimize the amount of work contributors have done towards it; I&rsquo;m just pointing out that it&rsquo;s incomplete and not a great option for querying right now. With this in mind, QueryOver is really your <em>only</em> viable option for writing queries with NHibernate. I&rsquo;m sure the LINQ provider will only get better, but until then QueryOver is a good option.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -879,6 +1072,14 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/16/queryover-series-part-2-basics/">QueryOver Series - Part 2: Basics and Joining</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/12/queryover-series-part-1-why-queryover/">QueryOver Series - Part 1: Why QueryOver?</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a>
       </li>
     
@@ -888,10 +1089,6 @@
     
       <li class="post">
         <a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A simple jQuery aggregation plugin</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 year of StackOverflow</a>
       </li>
     
   </ul>

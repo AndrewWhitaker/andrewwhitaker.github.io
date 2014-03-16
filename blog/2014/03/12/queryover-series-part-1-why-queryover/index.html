@@ -5,13 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Blog Archive - Andrew Whitaker</title>
+  <title>QueryOver Series - Part 1: Why QueryOver? - Andrew Whitaker</title>
   <meta name="author" content="Andrew Whitaker">
 
   
-  <meta name="description" content="Blog Archive 2014 QueryOver Series - Part 2: Basics and Joining
-Mar 16 2014 QueryOver Series - Part 1: Why QueryOver?
-Mar 12 2014 2012 jQueryUI &hellip;">
+  <meta name="description" content="QueryOver is a strongly-typed querying technology built on top of NHibernate&rsquo;s Criteria API. It was introduced in NHibernate 3.0. QueryOver is &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +18,7 @@ Mar 12 2014 2012 jQueryUI &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://blog.andrewawhitaker.com/blog/archives/">
+  <link rel="canonical" href="http://blog.andrewawhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -64,103 +62,103 @@ Mar 12 2014 2012 jQueryUI &hellip;">
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Blog Archive</h1>
+    
+      <h1 class="entry-title">QueryOver Series - Part 1: Why QueryOver?</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-12T22:50:58-04:00" pubdate data-updated="true">Mar 12<span>th</span>, 2014</time>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives">
 
 
+<div class="entry-content"><p>QueryOver is a strongly-typed querying technology built on top of NHibernate&rsquo;s Criteria API. It was introduced in NHibernate 3.0. QueryOver is actually quite powerful and flexible, as I aim to demonstrate in this series of blog posts.</p>
 
-  
-  <h2>2014</h2>
+<p>There is not much in the way of official documentation for NHibernate in general, and even less for QueryOver. The only article on NHForge that I can find is <a href="http://nhforge.org/blogs/nhibernate/archive/2009/12/17/queryover-in-nh-3-0.aspx">here</a>. While this is a good read for an introduction, it really doesn&rsquo;t do QueryOver justice. There&rsquo;s a lot of capability that&rsquo;s not demonstrated there.</p>
 
-<article>
-  
-<h1><a href="/blog/2014/03/16/queryover-series-part-2-basics/">QueryOver Series - Part 2: Basics and Joining</a></h1>
-<time datetime="2014-03-16T12:05:33-04:00" pubdate><span class='month'>Mar</span> <span class='day'>16</span> <span class='year'>2014</span></time>
+<h3>Overview of available querying technologies</h3>
 
+<p>If you&rsquo;re using NHibernate, you&rsquo;re probably aware that you have several options when you go to write a query:</p>
 
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/03/12/queryover-series-part-1-why-queryover/">QueryOver Series - Part 1: Why QueryOver?</a></h1>
-<time datetime="2014-03-12T22:50:58-04:00" pubdate><span class='month'>Mar</span> <span class='day'>12</span> <span class='year'>2014</span></time>
+<ul>
+<li>SQL (via <code>CreateSQLQuery</code>)</li>
+<li>HQL</li>
+<li>LINQ to NHibernate</li>
+<li>Criteria</li>
+<li>QueryOver</li>
+</ul>
 
 
-</article>
+<p>Now, in some cases you <em>must</em> use SQL or HQL because of the type of query you&rsquo;re writing. For the vast majority of simple to intermediate queries though, LINQ to NHibernate, QueryOver, and Criteria all seem like viable options.</p>
 
+<h3>Why use QueryOver?</h3>
 
+<p>Let&rsquo;s assume that you&rsquo;re working on a large project and using magic strings everywhere to write queries makes you a bit nervous. People are changing property and class names every day, potentially breaking queries across your application. In this case, your better-looking options are LINQ to NHibernate and QueryOver.</p>
 
-  
-  <h2>2012</h2>
+<p>If you&rsquo;ve tried to use LINQ to NHibernate for anything remotely complex, you know you&rsquo;ll run into problems quickly. Currently you <a href="http://stackoverflow.com/q/15590021/497356">can&rsquo;t</a> <a href="http://stackoverflow.com/q/13624959/497356">even</a> <a href="https://nhibernate.jira.com/browse/NH-2379">do a left join</a>. What this means is if you have a left join in your query, or even if you think you&rsquo;ll need one one day, you can&rsquo;t currently use LINQ to NHibernate.</p>
 
-<article>
-  
-<h1><a href="/blog/2012/10/08/jqueryui-autocomplete-1-9/">jQueryUI Autocomplete 1.9</a></h1>
-<time datetime="2012-10-08T21:37:33-04:00" pubdate><span class='month'>Oct</span> <span class='day'>08</span> <span class='year'>2012</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/javascript/'>JavaScript</a>, <a class='category' href='/blog/categories/programming/'>Programming</a>, <a class='category' href='/blog/categories/jquery/'>jQuery</a>, <a class='category' href='/blog/categories/jqueryui/'>jQueryUI</a></span>
-</footer>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/">jQueryUI Autocomplete: Top 5 sources of confusion</a></h1>
-<time datetime="2012-09-29T14:31:58-04:00" pubdate><span class='month'>Sep</span> <span class='day'>29</span> <span class='year'>2012</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/javascript/'>JavaScript</a>, <a class='category' href='/blog/categories/programming/'>Programming</a>, <a class='category' href='/blog/categories/jquery/'>jQuery</a>, <a class='category' href='/blog/categories/jqueryui/'>jQueryUI</a></span>
-</footer>
-
-
-</article>
-
-
-
-  
-  <h2>2011</h2>
-
-<article>
-  
-<h1><a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A simple jQuery aggregation plugin</a></h1>
-<time datetime="2011-12-22T18:39:02-05:00" pubdate><span class='month'>Dec</span> <span class='day'>22</span> <span class='year'>2011</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/javascript/'>JavaScript</a>, <a class='category' href='/blog/categories/programming/'>Programming</a>, <a class='category' href='/blog/categories/jquery/'>jQuery</a></span>
-</footer>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 year of StackOverflow</a></h1>
-<time datetime="2011-11-12T23:16:46-05:00" pubdate><span class='month'>Nov</span> <span class='day'>12</span> <span class='year'>2011</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/programming/'>Programming</a></span>
-</footer>
-
-
-</article>
-
+<p>I&rsquo;m not trying to pick on NHibernate&rsquo;s LINQ provider or minimize the amount of work contributors have done towards it; I&rsquo;m just pointing out that it&rsquo;s incomplete and not a great option for querying right now. With this in mind, QueryOver is really your <em>only</em> viable option for writing queries with NHibernate. I&rsquo;m sure the LINQ provider will only get better, but until then QueryOver is a good option.</p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Andrew Whitaker</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-12T22:50:58-04:00" pubdate data-updated="true">Mar 12<span>th</span>, 2014</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/10/08/jqueryui-autocomplete-1-9/" title="Previous Post: jQueryUI Autocomplete 1.9">&laquo; jQueryUI Autocomplete 1.9</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/03/16/queryover-series-part-2-basics/" title="Next Post: QueryOver Series - Part 2: Basics and Joining">QueryOver Series - Part 2: Basics and Joining &raquo;</a>
+      
+    </p>
+  </footer>
 </article>
 
 </div>
