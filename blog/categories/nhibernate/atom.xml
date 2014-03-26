@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
+  <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
+  <link href="http://blog.andrewawhitaker.com/"/>
+  <updated>2014-03-26T18:59:32-04:00</updated>
+  <id>http://blog.andrewawhitaker.com/</id>
+  <author>
+    <name><![CDATA[Andrew Whitaker]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 3: Selecting]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/"/>
+    <updated>2014-03-22T11:01:46-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming</id>
+    <content type="html"><![CDATA[<p>In this post I&rsquo;ll go over building the <code>SELECT</code> statement with NHibernate QueryOver. I&rsquo;ll also cover the different ways you can actually get a result back from your query.</p>
+
+<h3>Selecting a single property</h3>
+
+<p>In the simplest case, you&rsquo;ll want to select a single column from a single row. For example, if you wanted to retrieve a single <code>Product</code>&rsquo;s <code>Name</code>:</p>
+
+<p>``` csharp
+string name = session.QueryOver<Product>()</p>
+
+<pre><code>.Where(p =&gt; p.Id == 1)
+.Select(p =&gt; p.Name)
+.SingleOrDefault&lt;string&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Which yields the following SQL:</p>
+
+<p>``` sql
+SELECT</p>
+
+<pre><code>this_.Name as y0_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>WHERE</p>
+
+<pre><code>this_.ProductID = 1;
+</code></pre>
+
+<p>```</p>
+
+<p>Note that if your query actually returns more than one result, NHibernate will throw an exception, letting you know that the query did not return a unique result.</p>
+
+<p>Similarly, if you want to select a list of single properties, say the <code>Name</code> of every <code>Product</code>:</p>
+
+<p>``` csharp
+IList<string> names = session.QueryOver<Product>()</p>
+
+<pre><code>.Select(p =&gt; p.Name)
+.List&lt;string&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Generates:</p>
+
+<p>``` sql
+SELECT</p>
+
+<pre><code>this_.Name as y0_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>```</p>
+
+<h3>Selecting multiple properties</h3>
+
+<p>Most of the time you won&rsquo;t want to select just one column, you&rsquo;ll want to build a whole result set. You have a few options in this area:</p>
+
+<h4>Using <code>SelectList</code></h4>
+
+<p><code>SelectList</code> is one way to specify a list of properties you&rsquo;d like to select. Here&rsquo;s a simple example:</p>
+
+<p>``` csharp
+IList&lt;object[]> productInformation = session.QueryOver<Product>()</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .Select(p =&gt; p.Id)
+    .Select(p =&gt; p.Name)
+    .Select(p =&gt; p.StandardCost)
+)
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>This generates the SQL you&rsquo;d expect:</p>
+
+<p>``` sql
+SELECT</p>
+
+<pre><code>this_.ProductID as y0_,
+this_.Name as y1_,
+this_.StandardCost as y2_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>```</p>
+
+<p>Those are the basics of using <code>SelectList</code>. There are some cool things you can do with <code>SelectList</code> to build <code>SELECT</code> clauses dynamically.</p>
+
+<p><code>SelectList</code> accepts a <code>QueryOverProjectionBuilder&lt;TRoot&gt;</code>. We can take advantage of QueryOver&rsquo;s dynamic nature to dynamically build a select list.</p>
+
+<p>One way to do this is to create a method that accepts a <code>QueryOverProjectionBuilder&lt;TRoot&gt;</code> and has the same return type. To expand on the <code>Product</code> example above:</p>
+
+<p>``` csharp
+static QueryOverProjectionBuilder<Product> BuildSelectList(</p>
+
+<pre><code>QueryOverProjectionBuilder&lt;Product&gt; list)
+</code></pre>
+
+<p>{</p>
+
+<pre><code>bool getName = /* some condition */;
+
+if (getName)
+{
+    list.Select(p =&gt; p.Name);
+}
+
+list
+    .Select(p =&gt; p.Id)
+    .Select(p =&gt; p.StandardCost);
+
+return list;
+</code></pre>
+
+<p>}
+```</p>
+
+<p>We can then call the method directly from <code>SelectList</code>:</p>
+
+<p>``` csharp
+IList&lt;object[]> names = session.QueryOver<Product>()</p>
+
+<pre><code>.SelectList(BuildSelectList)
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<h4>Using <code>Projections.ProjectionList()</code></h4>
+
+<p>Another way to build a <code>SELECT</code> clause is using <code>Projections.ProjectionList()</code>. You can pass a <code>ProjectionList</code> to the <code>.Select</code> method:</p>
+
+<p>``` csharp
+Product productAlias = null;</p>
+
+<p>session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.Select(Projections.ProjectionList()
+    .Add(Projections.Property(() =&gt; productAlias.Id))
+    .Add(Projections.Property(() =&gt; productAlias.Name))
+)
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>This generates the following SQL:</p>
+
+<p>``` sql
+SELECT</p>
+
+<pre><code>this_.ProductID as y0_,
+this_.Name as y1_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>```</p>
+
+<p>It&rsquo;s also easy to generate dynamic <code>SELECT</code> clauses with <code>ProjectionList</code>:</p>
+
+<p>``` csharp
+Product productAlias = null;</p>
+
+<p>ProjectionList projectionList = Projections.ProjectionList()</p>
+
+<pre><code>.Add(Projections.Property(() =&gt; productAlias.Id))
+.Add(Projections.Property(() =&gt; productAlias.StandardCost));
+</code></pre>
+
+<p>bool getName = true;</p>
+
+<p>if (getName)
+{</p>
+
+<pre><code>projectionList.Add(Projections.Property(() =&gt; productAlias.Name));
+</code></pre>
+
+<p>}</p>
+
+<p>session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.Select(projectionList)
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>I think if you&rsquo;re dynamically building the <code>SELECT</code> clause, <code>Projections.ProjectionList</code> is actually cleaner, due to the way you can easily build it outside of the query itself.</p>
+
+<h3>Aggregates</h3>
+
+<p>So far I&rsquo;ve looked at building simple <code>SELECT</code>s. Now I&rsquo;ll look at using aggregate functions.</p>
+
+<p>In the simplest cases, using <code>SelectList</code> along with <code>SelectGroup</code> and the aggregate function you want will get the job done.</p>
+
+<p>For example:</p>
+
+<p>``` csharp
+session.QueryOver<Product>()</p>
+
+<pre><code>.JoinQueryOver(pr =&gt; pr.TransactionHistory, () =&gt; transactionHistoryAlias)
+.SelectList(list =&gt; list
+    .SelectGroup(pr =&gt; pr.Id)
+    .SelectCount(() =&gt; transactionHistoryAlias.Id)
+)
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Will generate:</p>
+
+<p>``` sql
+SELECT</p>
+
+<pre><code>this_.ProductID as y0_,
+count(transactio1_.TransactionID) as y1_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>inner join</p>
+
+<pre><code>Production.TransactionHistory transactio1_
+    on this_.ProductID=transactio1_.ProductID
+</code></pre>
+
+<p>GROUP BY</p>
+
+<pre><code>this_.ProductID
+</code></pre>
+
+<p>```</p>
+
+<p>You can call <code>SelectGroup</code> multiple times to add more columns to group on. You&rsquo;ll notice that <code>.SelectGroup</code> adds a column to the <code>GROUP BY</code> clause as well as the <code>SELECT</code> clause.</p>
+
+<p>You can also add a <code>HAVING</code> clause, although it is <em>not</em> intuitive at all:</p>
+
+<p>``` csharp
+var results = session.QueryOver<Product>()</p>
+
+<pre><code>.JoinQueryOver(pr =&gt; pr.TransactionHistory, () =&gt; transactionHistoryAlias)
+.SelectList(list =&gt; list
+    .SelectGroup(pr =&gt; pr.Id)
+    .SelectGroup(pr =&gt; pr.Name)
+    .SelectCount(() =&gt; transactionHistoryAlias.Id)
+)
+/* Generates a HAVING clause: */
+.Where(Restrictions.Gt(
+    Projections.Count(
+        Projections.Property(() =&gt; transactionHistoryAlias.Id)), 5))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>This generates the following SQL:</p>
+
+<p>``` sql
+SELECT</p>
+
+<pre><code>this_.ProductID as y0_,
+this_.Name as y1_,
+count(transactio1_.TransactionID) as y2_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>inner join</p>
+
+<pre><code>Production.TransactionHistory transactio1_
+    on this_.ProductID=transactio1_.ProductID
+</code></pre>
+
+<p>GROUP BY</p>
+
+<pre><code>this_.ProductID,
+this_.Name
+</code></pre>
+
+<p>HAVING</p>
+
+<pre><code>count(transactio1_.TransactionID) &gt; 5;
+</code></pre>
+
+<p>```</p>
+
+<h3>Subqueries</h3>
+
+<p>There are several ways to create subqueries. You can create a correlated subquery by creating an alias in the outer query and referencing it in the other query. Here&rsquo;s an example using <code>SelectList</code> and <code>SelectSubQuery</code>:</p>
+
+<p>``` csharp
+var results = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .Select(pr =&gt; pr.Id)
+    .SelectSubQuery(
+        QueryOver.Of&lt;TransactionHistory&gt;()
+            // Creates a correlated subquery
+            .Where(tx =&gt; tx.Product.Id == productAlias.Id)
+            .OrderBy(tx =&gt; tx.TransactionDate).Asc
+            .Select(tx =&gt; tx.TransactionDate)
+            .Take(1)
+        )
+)
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Which generates:</p>
+
+<p>``` sql
+SELECT
+   this<em>.ProductID as y0</em>,
+   (SELECT</p>
+
+<pre><code>   TOP (1)  this_0_.TransactionDate as y0_
+</code></pre>
+
+<p>   FROM</p>
+
+<pre><code>   Production.TransactionHistory this_0_
+</code></pre>
+
+<p>   WHERE</p>
+
+<pre><code>   this_0_.ProductID = this_.ProductID
+</code></pre>
+
+<p>   ORDER BY</p>
+
+<pre><code>   this_0_.TransactionDate asc) as y1_
+</code></pre>
+
+<p>FROM
+   Production.Product this_;
+```</p>
+
+<p>In general, if you can&rsquo;t find a method on <code>QueryOverProjectionBuilder&lt;TRoot&gt;</code> using <code>.SelectList</code>, you can drop back into criteria methods on the <code>Projections</code> class. For example, say you want to use a case statement in your <code>SELECT</code> clause. You can use <code>Projections.Conditional</code> for that:</p>
+
+<p>``` csharp
+var results = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.JoinQueryOver(pr =&gt; pr.TransactionHistory, () =&gt; transactionHistoryAlias)
+.SelectList(list =&gt; list
+    .Select(pr =&gt; pr.Id)
+    .Select(Projections.Conditional(
+        Restrictions.Gt(
+            Projections.Property(() =&gt; transactionHistoryAlias.Quantity), 5),
+        Projections.Constant(true),
+        Projections.Constant(false)
+)))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Which generates:</p>
+
+<p>``` sql
+SELECT</p>
+
+<pre><code>this_.ProductID as y0_,
+(case
+    when transactio1_.Quantity &gt; 5 then 'True'
+    else 'False'
+end) as y1_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>inner join</p>
+
+<pre><code>Production.TransactionHistory transactio1_
+    on this_.ProductID=transactio1_.ProductID;
+</code></pre>
+
+<p>```</p>
+
+<h3>Summary</h3>
+
+<p>This post covered a lot, but that&rsquo;s because there are many ways to build a <code>SELECT</code> clause with QueryOver. In summary:</p>
+
+<ul>
+<li><code>Select</code> can be used to build a <code>SELECT</code> clause with single columns</li>
+<li><code>SelectList</code> and <code>Projections.ProjectionList</code> can be used to create more complex <code>SELECT</code> clauses.</li>
+<li>When aggregating values, use <code>SelectGroup</code> (or <code>Projections.GroupProperty</code>).</li>
+<li>For more complex scenarios, you can drop back in to Criteria methods on the <code>Projections</code> class. These support lambda expressions and can be used with QueryOver.</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

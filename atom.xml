@@ -4,7 +4,7 @@
   <title><![CDATA[Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-03-16T15:00:39-04:00</updated>
+  <updated>2014-03-26T18:59:32-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,486 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 3: Selecting]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/"/>
+    <updated>2014-03-22T11:01:46-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming</id>
+    <content type="html"><![CDATA[<p>In this post I&rsquo;ll go over building the <code>SELECT</code> statement with NHibernate QueryOver. I&rsquo;ll also cover the different ways you can actually get a result back from your query.</p>
+
+<h3>Selecting a single property</h3>
+
+<p>In the simplest case, you&rsquo;ll want to select a single column from a single row. For example, if you wanted to retrieve a single <code>Product</code>&rsquo;s <code>Name</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="kt">string</span> <span class="n">name</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span> <span class="m">1</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Name</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SingleOrDefault</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Which yields the following SQL:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Name</span> <span class="k">as</span> <span class="n">y0_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">WHERE</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that if your query actually returns more than one result, NHibernate will throw an exception, letting you know that the query did not return a unique result.</p>
+
+<p>Similarly, if you want to select a list of single properties, say the <code>Name</code> of every <code>Product</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">IList</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="n">names</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Name</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Generates:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Name</span> <span class="k">as</span> <span class="n">y0_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Selecting multiple properties</h3>
+
+<p>Most of the time you won&rsquo;t want to select just one column, you&rsquo;ll want to build a whole result set. You have a few options in this area:</p>
+
+<h4>Using <code>SelectList</code></h4>
+
+<p><code>SelectList</code> is one way to specify a list of properties you&rsquo;d like to select. Here&rsquo;s a simple example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">IList</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;</span> <span class="n">productInformation</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SelectList</span><span class="p">(</span><span class="n">list</span> <span class="p">=&gt;</span> <span class="n">list</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Name</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">StandardCost</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This generates the SQL you&rsquo;d expect:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Name</span> <span class="k">as</span> <span class="n">y1_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">StandardCost</span> <span class="k">as</span> <span class="n">y2_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Those are the basics of using <code>SelectList</code>. There are some cool things you can do with <code>SelectList</code> to build <code>SELECT</code> clauses dynamically.</p>
+
+<p><code>SelectList</code> accepts a <code>QueryOverProjectionBuilder&lt;TRoot&gt;</code>. We can take advantage of QueryOver&rsquo;s dynamic nature to dynamically build a select list.</p>
+
+<p>One way to do this is to create a method that accepts a <code>QueryOverProjectionBuilder&lt;TRoot&gt;</code> and has the same return type. To expand on the <code>Product</code> example above:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">static</span> <span class="n">QueryOverProjectionBuilder</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">BuildSelectList</span><span class="p">(</span>
+</span><span class='line'>    <span class="n">QueryOverProjectionBuilder</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">list</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">bool</span> <span class="n">getName</span> <span class="p">=</span> <span class="cm">/* some condition */</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">getName</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">list</span><span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Name</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">list</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">StandardCost</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">list</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We can then call the method directly from <code>SelectList</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">IList</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;</span> <span class="n">names</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SelectList</span><span class="p">(</span><span class="n">BuildSelectList</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Using <code>Projections.ProjectionList()</code></h4>
+
+<p>Another way to build a <code>SELECT</code> clause is using <code>Projections.ProjectionList()</code>. You can pass a <code>ProjectionList</code> to the <code>.Select</code> method:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">ProjectionList</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Name</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This generates the following SQL:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Name</span> <span class="k">as</span> <span class="n">y1_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It&rsquo;s also easy to generate dynamic <code>SELECT</code> clauses with <code>ProjectionList</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">ProjectionList</span> <span class="n">projectionList</span> <span class="p">=</span> <span class="n">Projections</span><span class="p">.</span><span class="n">ProjectionList</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">StandardCost</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">bool</span> <span class="n">getName</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">getName</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">projectionList</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Name</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">projectionList</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>I think if you&rsquo;re dynamically building the <code>SELECT</code> clause, <code>Projections.ProjectionList</code> is actually cleaner, due to the way you can easily build it outside of the query itself.</p>
+
+<h3>Aggregates</h3>
+
+<p>So far I&rsquo;ve looked at building simple <code>SELECT</code>s. Now I&rsquo;ll look at using aggregate functions.</p>
+
+<p>In the simplest cases, using <code>SelectList</code> along with <code>SelectGroup</code> and the aggregate function you want will get the job done.</p>
+
+<p>For example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">TransactionHistory</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">transactionHistoryAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SelectList</span><span class="p">(</span><span class="n">list</span> <span class="p">=&gt;</span> <span class="n">list</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">SelectGroup</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">SelectCount</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">transactionHistoryAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Will generate:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="k">count</span><span class="p">(</span><span class="n">transactio1_</span><span class="p">.</span><span class="n">TransactionID</span><span class="p">)</span> <span class="k">as</span> <span class="n">y1_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">inner</span> <span class="k">join</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">TransactionHistory</span> <span class="n">transactio1_</span>
+</span><span class='line'>        <span class="k">on</span> <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span><span class="o">=</span><span class="n">transactio1_</span><span class="p">.</span><span class="n">ProductID</span>
+</span><span class='line'><span class="k">GROUP</span> <span class="k">BY</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can call <code>SelectGroup</code> multiple times to add more columns to group on. You&rsquo;ll notice that <code>.SelectGroup</code> adds a column to the <code>GROUP BY</code> clause as well as the <code>SELECT</code> clause.</p>
+
+<p>You can also add a <code>HAVING</code> clause, although it is <em>not</em> intuitive at all:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="kt">var</span> <span class="n">results</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">TransactionHistory</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">transactionHistoryAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SelectList</span><span class="p">(</span><span class="n">list</span> <span class="p">=&gt;</span> <span class="n">list</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">SelectGroup</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">SelectGroup</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Name</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">SelectCount</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">transactionHistoryAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">)</span>
+</span><span class='line'>    <span class="cm">/* Generates a HAVING clause: */</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Gt</span><span class="p">(</span>
+</span><span class='line'>        <span class="n">Projections</span><span class="p">.</span><span class="n">Count</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">transactionHistoryAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)),</span> <span class="m">5</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This generates the following SQL:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Name</span> <span class="k">as</span> <span class="n">y1_</span><span class="p">,</span>
+</span><span class='line'>    <span class="k">count</span><span class="p">(</span><span class="n">transactio1_</span><span class="p">.</span><span class="n">TransactionID</span><span class="p">)</span> <span class="k">as</span> <span class="n">y2_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">inner</span> <span class="k">join</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">TransactionHistory</span> <span class="n">transactio1_</span>
+</span><span class='line'>        <span class="k">on</span> <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span><span class="o">=</span><span class="n">transactio1_</span><span class="p">.</span><span class="n">ProductID</span>
+</span><span class='line'><span class="k">GROUP</span> <span class="k">BY</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Name</span>
+</span><span class='line'><span class="k">HAVING</span>
+</span><span class='line'>    <span class="k">count</span><span class="p">(</span><span class="n">transactio1_</span><span class="p">.</span><span class="n">TransactionID</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Subqueries</h3>
+
+<p>There are several ways to create subqueries. You can create a correlated subquery by creating an alias in the outer query and referencing it in the other query. Here&rsquo;s an example using <code>SelectList</code> and <code>SelectSubQuery</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="kt">var</span> <span class="n">results</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SelectList</span><span class="p">(</span><span class="n">list</span> <span class="p">=&gt;</span> <span class="n">list</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">SelectSubQuery</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>                <span class="c1">// Creates a correlated subquery</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">TransactionDate</span><span class="p">).</span><span class="n">Asc</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">TransactionDate</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">)</span>
+</span><span class='line'>    <span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Which generates:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>   <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y0_</span><span class="p">,</span>
+</span><span class='line'>   <span class="p">(</span><span class="k">SELECT</span>
+</span><span class='line'>       <span class="n">TOP</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="n">this_0_</span><span class="p">.</span><span class="n">TransactionDate</span> <span class="k">as</span> <span class="n">y0_</span>
+</span><span class='line'>   <span class="k">FROM</span>
+</span><span class='line'>       <span class="n">Production</span><span class="p">.</span><span class="n">TransactionHistory</span> <span class="n">this_0_</span>
+</span><span class='line'>   <span class="k">WHERE</span>
+</span><span class='line'>       <span class="n">this_0_</span><span class="p">.</span><span class="n">ProductID</span> <span class="o">=</span> <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span>
+</span><span class='line'>   <span class="k">ORDER</span> <span class="k">BY</span>
+</span><span class='line'>       <span class="n">this_0_</span><span class="p">.</span><span class="n">TransactionDate</span> <span class="k">asc</span><span class="p">)</span> <span class="k">as</span> <span class="n">y1_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>   <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In general, if you can&rsquo;t find a method on <code>QueryOverProjectionBuilder&lt;TRoot&gt;</code> using <code>.SelectList</code>, you can drop back into criteria methods on the <code>Projections</code> class. For example, say you want to use a case statement in your <code>SELECT</code> clause. You can use <code>Projections.Conditional</code> for that:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="kt">var</span> <span class="n">results</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">TransactionHistory</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">transactionHistoryAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SelectList</span><span class="p">(</span><span class="n">list</span> <span class="p">=&gt;</span> <span class="n">list</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Conditional</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">Restrictions</span><span class="p">.</span><span class="n">Gt</span><span class="p">(</span>
+</span><span class='line'>                <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">transactionHistoryAlias</span><span class="p">.</span><span class="n">Quantity</span><span class="p">),</span> <span class="m">5</span><span class="p">),</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">Constant</span><span class="p">(</span><span class="k">true</span><span class="p">),</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">Constant</span><span class="p">(</span><span class="k">false</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">)))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Which generates:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">case</span>
+</span><span class='line'>        <span class="k">when</span> <span class="n">transactio1_</span><span class="p">.</span><span class="n">Quantity</span> <span class="o">&gt;</span> <span class="mi">5</span> <span class="k">then</span> <span class="s1">&#39;True&#39;</span>
+</span><span class='line'>        <span class="k">else</span> <span class="s1">&#39;False&#39;</span>
+</span><span class='line'>    <span class="k">end</span><span class="p">)</span> <span class="k">as</span> <span class="n">y1_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">inner</span> <span class="k">join</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">TransactionHistory</span> <span class="n">transactio1_</span>
+</span><span class='line'>        <span class="k">on</span> <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span><span class="o">=</span><span class="n">transactio1_</span><span class="p">.</span><span class="n">ProductID</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Summary</h3>
+
+<p>This post covered a lot, but that&rsquo;s because there are many ways to build a <code>SELECT</code> clause with QueryOver. In summary:</p>
+
+<ul>
+<li><code>Select</code> can be used to build a <code>SELECT</code> clause with single columns</li>
+<li><code>SelectList</code> and <code>Projections.ProjectionList</code> can be used to create more complex <code>SELECT</code> clauses.</li>
+<li>When aggregating values, use <code>SelectGroup</code> (or <code>Projections.GroupProperty</code>).</li>
+<li>For more complex scenarios, you can drop back in to Criteria methods on the <code>Projections</code> class. These support lambda expressions and can be used with QueryOver.</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 2: Basics and Joining]]></title>
