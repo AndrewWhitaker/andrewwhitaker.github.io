@@ -93,6 +93,9 @@
 
 <p>In the context of an NHibernate query, a <em>transformer</em> is simply a class that transforms each row from a query into an instance of an object. NHibernate comes with several and allows you to easily create a custom transformer if you&rsquo;d like.</p>
 
+<!-- more -->
+
+
 <p>Transformers are supplied to the <code>TransformUsing</code> function on an instance of <code>IQueryOver&lt;TRoot, TSubtype&gt;</code>. For example, here&rsquo;s how you would use <code>Transformers.DistinctRootEntity</code> (which I&rsquo;ll go into more detail later about):</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>

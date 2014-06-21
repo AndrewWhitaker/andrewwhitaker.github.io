@@ -4,7 +4,7 @@
   <title><![CDATA[Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-06-20T20:17:21-04:00</updated>
+  <updated>2014-06-20T20:28:10-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -21,6 +21,9 @@
     <content type="html"><![CDATA[<p>You might have noticed that the last post in the series always projects each result row into an <code>object[]</code>. This might have made you wonder if there&rsquo;s a better way to get results from a QueryOver query. Well there is! It&rsquo;s called transforming.</p>
 
 <p>In the context of an NHibernate query, a <em>transformer</em> is simply a class that transforms each row from a query into an instance of an object. NHibernate comes with several and allows you to easily create a custom transformer if you&rsquo;d like.</p>
+
+<!-- more -->
+
 
 <p>Transformers are supplied to the <code>TransformUsing</code> function on an instance of <code>IQueryOver&lt;TRoot, TSubtype&gt;</code>. For example, here&rsquo;s how you would use <code>Transformers.DistinctRootEntity</code> (which I&rsquo;ll go into more detail later about):</p>
 
@@ -610,6 +613,9 @@
     <id>http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming</id>
     <content type="html"><![CDATA[<p>In this post I&rsquo;ll go over building the <code>SELECT</code> statement with NHibernate QueryOver. I&rsquo;ll also cover the different ways you can actually get a result back from your query.</p>
 
+<!-- more -->
+
+
 <h3>Selecting a single property</h3>
 
 <p>In the simplest case, you&rsquo;ll want to select a single column from a single row. For example, if you wanted to retrieve a single <code>Product</code>&rsquo;s <code>Name</code>:</p>
@@ -1090,6 +1096,9 @@
     <id>http://blog.andrewawhitaker.com/blog/2014/03/16/queryover-series-part-2-basics</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;ll outline some basics on QueryOver, including the NHibernate types involved and basic query structure. I&rsquo;ll also talk about joining using <code>JoinAlias</code> and <code>JoinQueryOver</code></p>
 
+<!-- more -->
+
+
 <h4><code>IQueryOver&lt;TRoot, TSubType&gt;</code></h4>
 
 <p>If you look closely at the types involved when writing QueryOver queries, you&rsquo;ll notice that there are two generic type parameters: <code>TRoot</code> and <code>TSubType</code>. Why would the API need two type parameters?</p>
@@ -1197,6 +1206,9 @@
 
 <p>There is not much in the way of official documentation for NHibernate in general, and even less for QueryOver. The only article on NHForge that I can find is <a href="http://nhforge.org/blogs/nhibernate/archive/2009/12/17/queryover-in-nh-3-0.aspx">here</a>. While this is a good read for an introduction, it really doesn&rsquo;t do QueryOver justice. There&rsquo;s a lot of capability that&rsquo;s not demonstrated there.</p>
 
+<!-- more -->
+
+
 <h3>Overview of available querying technologies</h3>
 
 <p>If you&rsquo;re using NHibernate, you&rsquo;re probably aware that you have several options when you go to write a query:</p>
@@ -1228,6 +1240,9 @@
     <updated>2012-10-08T21:37:33-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9</id>
     <content type="html"><![CDATA[<p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
+
+<!-- more -->
+
 
 <h2>The <code>response</code> event</h2>
 
@@ -1427,6 +1442,9 @@
     <updated>2012-09-29T14:31:58-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
+
+<!-- more -->
+
 
 <h2>jQuery Autocomplete vs. jQueryUI autocomplete</h2>
 
@@ -1708,6 +1726,9 @@
     <id>http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
 
+<!-- more -->
+
+
 <p>Let&rsquo;s take a look with an example:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -1867,11 +1888,14 @@
     <id>http://blog.andrewawhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow</id>
     <content type="html"><![CDATA[<p>About one year ago this month I joined <a href="http://www.stackoverflow.com">StackOverflow</a> and started participating. I wanted to take a few minutes to reflect on my experience the site. First off, why did I start answering questions?</p>
 
+<!-- more -->
+
+
 <ul>
-<li><p>A living portfolio; My StackOverflow profile is something that&rsquo;s constantly growing and that I can show to employers</p></li>
-<li><p>Learning. Just spending time on the site allows you to learn new things.</p></li>
-<li><p>Helping others. I use tons of free software every day. This is my way of giving back.</p></li>
-<li><p>Pick up new problem-solving skills. Seeing the ways <em>others</em> answer questions gives you a view into their thought process. Seeing solutions that you wouldn&rsquo;t necessarily have come up with yourself adds tools to your problem-solving toolbox.</p></li>
+<li>A living portfolio; My StackOverflow profile is something that&rsquo;s constantly growing and that I can show to employers</li>
+<li>Learning. Just spending time on the site allows you to learn new things.</li>
+<li>Helping others. I use tons of free software every day. This is my way of giving back.</li>
+<li>Pick up new problem-solving skills. Seeing the ways <em>others</em> answer questions gives you a view into their thought process. Seeing solutions that you wouldn&rsquo;t necessarily have come up with yourself adds tools to your problem-solving toolbox.</li>
 </ul>
 
 
@@ -1882,10 +1906,10 @@
 <p>I quickly figured out what makes a high-quality answer (beyond the qualities of a simply &ldquo;good&rdquo; answer):</p>
 
 <ul>
-<li><p>Provides a <strong>working</strong> code sample</p></li>
-<li><p>Provides a good explanation of that sample (just giving people code isn&rsquo;t helpful after all)</p></li>
-<li><p>Links to relevant documentation</p></li>
-<li><p>Link to a demo, if possible</p></li>
+<li>Provides a <strong>working</strong> code sample</li>
+<li>Provides a good explanation of that sample (just giving people code isn&rsquo;t helpful after all)</li>
+<li>Links to relevant documentation</li>
+<li>Link to a demo, if possible</li>
 </ul>
 
 
@@ -1904,9 +1928,9 @@
 <p>My goals for next year include:</p>
 
 <ul>
-<li><p>Getting a gold badge in jQuery (1000 upvotes)</p></li>
-<li><p>Getting a silver badge in C# (yep, I need to branch out)</p></li>
-<li><p>Edit 600 posts</p></li>
+<li>Getting a gold badge in jQuery (1000 upvotes)</li>
+<li>Getting a silver badge in C# (yep, I need to branch out)</li>
+<li>Edit 600 posts</li>
 </ul>
 
 

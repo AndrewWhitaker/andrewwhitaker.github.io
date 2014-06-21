@@ -4,7 +4,7 @@
   <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-06-20T20:17:21-04:00</updated>
+  <updated>2014-06-20T20:28:10-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -21,6 +21,9 @@
     <content type="html"><![CDATA[<p>You might have noticed that the last post in the series always projects each result row into an <code>object[]</code>. This might have made you wonder if there&rsquo;s a better way to get results from a QueryOver query. Well there is! It&rsquo;s called transforming.</p>
 
 <p>In the context of an NHibernate query, a <em>transformer</em> is simply a class that transforms each row from a query into an instance of an object. NHibernate comes with several and allows you to easily create a custom transformer if you&rsquo;d like.</p>
+
+<!-- more -->
+
 
 <p>Transformers are supplied to the <code>TransformUsing</code> function on an instance of <code>IQueryOver&lt;TRoot, TSubtype&gt;</code>. For example, here&rsquo;s how you would use <code>Transformers.DistinctRootEntity</code> (which I&rsquo;ll go into more detail later about):</p>
 
@@ -467,6 +470,9 @@ DateTime dateRetrieved = DateTime.Now;</p>
     <updated>2014-03-22T11:01:46-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming</id>
     <content type="html"><![CDATA[<p>In this post I&rsquo;ll go over building the <code>SELECT</code> statement with NHibernate QueryOver. I&rsquo;ll also cover the different ways you can actually get a result back from your query.</p>
+
+<!-- more -->
+
 
 <h3>Selecting a single property</h3>
 

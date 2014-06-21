@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Programming | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/programming/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-06-20T20:17:21-04:00</updated>
+  <updated>2014-06-20T20:28:10-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -19,6 +19,9 @@
     <updated>2012-10-08T21:37:33-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9</id>
     <content type="html"><![CDATA[<p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
+
+<!-- more -->
+
 
 <h2>The <code>response</code> event</h2>
 
@@ -168,6 +171,9 @@ $("#auto").autocomplete({
     <updated>2012-09-29T14:31:58-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
+
+<!-- more -->
+
 
 <h2>jQuery Autocomplete vs. jQueryUI autocomplete</h2>
 
@@ -362,6 +368,9 @@ function split(val) {</p>
     <id>http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
 
+<!-- more -->
+
+
 <p>Let&rsquo;s take a look with an example:</p>
 
 <p>``` javascript</p>
@@ -484,11 +493,14 @@ $(document).ready(function () {</p>
     <id>http://blog.andrewawhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow</id>
     <content type="html"><![CDATA[<p>About one year ago this month I joined <a href="http://www.stackoverflow.com">StackOverflow</a> and started participating. I wanted to take a few minutes to reflect on my experience the site. First off, why did I start answering questions?</p>
 
+<!-- more -->
+
+
 <ul>
-<li><p>A living portfolio; My StackOverflow profile is something that&rsquo;s constantly growing and that I can show to employers</p></li>
-<li><p>Learning. Just spending time on the site allows you to learn new things.</p></li>
-<li><p>Helping others. I use tons of free software every day. This is my way of giving back.</p></li>
-<li><p>Pick up new problem-solving skills. Seeing the ways <em>others</em> answer questions gives you a view into their thought process. Seeing solutions that you wouldn&rsquo;t necessarily have come up with yourself adds tools to your problem-solving toolbox.</p></li>
+<li>A living portfolio; My StackOverflow profile is something that&rsquo;s constantly growing and that I can show to employers</li>
+<li>Learning. Just spending time on the site allows you to learn new things.</li>
+<li>Helping others. I use tons of free software every day. This is my way of giving back.</li>
+<li>Pick up new problem-solving skills. Seeing the ways <em>others</em> answer questions gives you a view into their thought process. Seeing solutions that you wouldn&rsquo;t necessarily have come up with yourself adds tools to your problem-solving toolbox.</li>
 </ul>
 
 
@@ -499,10 +511,10 @@ $(document).ready(function () {</p>
 <p>I quickly figured out what makes a high-quality answer (beyond the qualities of a simply &ldquo;good&rdquo; answer):</p>
 
 <ul>
-<li><p>Provides a <strong>working</strong> code sample</p></li>
-<li><p>Provides a good explanation of that sample (just giving people code isn&rsquo;t helpful after all)</p></li>
-<li><p>Links to relevant documentation</p></li>
-<li><p>Link to a demo, if possible</p></li>
+<li>Provides a <strong>working</strong> code sample</li>
+<li>Provides a good explanation of that sample (just giving people code isn&rsquo;t helpful after all)</li>
+<li>Links to relevant documentation</li>
+<li>Link to a demo, if possible</li>
 </ul>
 
 
@@ -521,9 +533,9 @@ $(document).ready(function () {</p>
 <p>My goals for next year include:</p>
 
 <ul>
-<li><p>Getting a gold badge in jQuery (1000 upvotes)</p></li>
-<li><p>Getting a silver badge in C# (yep, I need to branch out)</p></li>
-<li><p>Edit 600 posts</p></li>
+<li>Getting a gold badge in jQuery (1000 upvotes)</li>
+<li>Getting a silver badge in C# (yep, I need to branch out)</li>
+<li>Edit 600 posts</li>
 </ul>
 
 

@@ -91,6 +91,9 @@
 
 <div class="entry-content"><p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
 
+<!-- more -->
+
+
 <p>Let&rsquo;s take a look with an example:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
