@@ -7,7 +7,7 @@ categories:
 ---
 
 In this post, I'll outline some basics on QueryOver, including the NHibernate types involved and basic query structure. I'll also talk about joining using `JoinAlias` and `JoinQueryOver`
-
+<!-- more -->
 #### `IQueryOver<TRoot, TSubType>`
 
 If you look closely at the types involved when writing QueryOver queries, you'll notice that there are two generic type parameters: `TRoot` and `TSubType`. Why would the API need two type parameters?

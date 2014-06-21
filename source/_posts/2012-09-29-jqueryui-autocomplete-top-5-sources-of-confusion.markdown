@@ -14,7 +14,7 @@ categories:
 ---
 
 I've been answering [jQueryUI autocomplete](http://www.jqueryui.com/demos/autocomplete) questions on StackOverflow now for over two and a half years and I've noticed that there are a few things that are _always_ coming up. This post will attempt to clear up those sources of confusion.
-
+<!-- more -->
 ## jQuery Autocomplete vs. jQueryUI autocomplete 
         
 [jQuery autocomplete](http://bassistance.de/jquery-plugins/jquery-plugin-autocomplete/) is jQueryUI autocomplete's predecessor. Despite the multiple messages and disclaimers on the legacy plugin's page, there is _still_ confusion about the documentation, functionality, and status of this plugin. For some reason, some folks do not notice the following message on Jörn Zaefferer's documentation page for the plugin:

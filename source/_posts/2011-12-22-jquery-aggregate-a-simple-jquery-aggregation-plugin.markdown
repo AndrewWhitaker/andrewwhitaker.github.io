@@ -13,7 +13,7 @@ categories:
 ---
 
 I've found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make `$.aggregate` and its little brother `$.sum` as close to LINQ's [aggregate](http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx) and [sum](http://msdn.microsoft.com/en-us/library/bb345537.aspx) as possible. This goal obviously couldn't be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can't really imply a "seed" value for an aggregating operation, since arrays can contain elements of various types in JavaScript.
-
+<!-- more -->
 Let's take a look with an example:
 
 ``` javascript

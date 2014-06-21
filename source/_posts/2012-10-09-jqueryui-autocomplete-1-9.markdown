@@ -14,7 +14,7 @@ categories:
 ---
 
 As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was [recently released](http://jqueryui.com/changelog/1.9.0/), autocomplete [got a little love](http://jqueryui.com/upgrade-guide/1.9/#autocomplete), which is what I'll focus on in this post. I'll go over each change and what practical implications it has.
-
+<!-- more -->
 ## The `response` event
 
 Previously, it wasn't possible to determine when a search had completed unless results were returned (in which case the `open` event was triggered). There are [several ways to get around this limitation](http://stackoverflow.com/a/4719848/497356), but none of them use autocomplete's API. This limitation made it hard to perform actions if the search returned zero results.  

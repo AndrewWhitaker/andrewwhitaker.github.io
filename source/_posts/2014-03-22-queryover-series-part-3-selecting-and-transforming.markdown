@@ -7,7 +7,7 @@ categories: nhibernate
 ---
 
 In this post I'll go over building the `SELECT` statement with NHibernate QueryOver. I'll also cover the different ways you can actually get a result back from your query.
-
+<!-- more -->
 ### Selecting a single property
 
 In the simplest case, you'll want to select a single column from a single row. For example, if you wanted to retrieve a single `Product`'s `Name`:
