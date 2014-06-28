@@ -4,7 +4,7 @@
   <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-06-20T21:26:31-04:00</updated>
+  <updated>2014-06-28T11:37:28-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,239 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 5: Materializing Results]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/"/>
+    <updated>2014-06-28T10:47:22-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results</id>
+    <content type="html"><![CDATA[<p>So far I&rsquo;ve been using the <code>.List</code> or <code>.SingleOrDefault</code> methods to actually get results from a query. In this post I&rsquo;ll go into a little more detail about those methods. I&rsquo;ll also cover other ways you can materialize a query&rsquo;s results.</p>
+
+<!-- more -->
+
+
+<h3><code>SingleOrDefault&lt;T&gt;</code> and <code>List&lt;T&gt;</code></h3>
+
+<p>These two are pretty self-explanatory. Calling <code>.List&lt;T&gt;</code> at the end of your query will immediately yield an <code>IList&lt;T&gt;</code>. For example:</p>
+
+<p>```csharp
+IList<Employee> empl = session.QueryOver<Employee>()</p>
+
+<pre><code>.List&lt;Employee&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Similarly, <code>SingleOrDefault&lt;T&gt;</code> will immediately give you a single item of type <code>T</code>, provided the query only returns one row. Otherwise, NHibernate will throw an exception telling you that the query did not return a unique result.</p>
+
+<h3><code>Future&lt;T&gt;</code> and <code>FutureValue&lt;T&gt;</code></h3>
+
+<p>These two are more interesting. <a href="http://ayende.com/blog/3979/nhibernate-futures">Ayende has discussed these in detail</a> with the Criteria API, but I don&rsquo;t think a blog series on QueryOver is really complete without mentioning them again. In NHibernate using these creates a &ldquo;MultiQuery&rdquo; or &ldquo;MultiCriteria&rdquo;, which just means that NHibernate is batching your queries into one round trip and deferring populating the results.</p>
+
+<h4><code>Future&lt;T&gt;</code></h4>
+
+<p>Calling <code>.Future&lt;T&gt;</code> on your query will return an <code>IEnumerable&lt;T&gt;</code> that will not be populated with results until one of the results or resultsets is needed. NHibernate will build up queries using <code>.Future&lt;T&gt;</code> or <code>.FutureValue&lt;T&gt;</code> until one of the &ldquo;future&rdquo; results are accessed.</p>
+
+<p>When the results are processed, NHibernate will send one request to the database containing the SQL for all of the &ldquo;future&rdquo; queries and populate the results accordingly. For example, lets say we were trying to display all <code>Employee</code>s and all <code>Product</code>s on the same page. We could just write two separate queries:</p>
+
+<p>```csharp
+// Get the list of employees first
+IList<Employee> employees = session.QueryOver<Employee>()</p>
+
+<pre><code>.List&lt;Employee&gt;();
+</code></pre>
+
+<p>// Then the list of products
+IList<Product> products = session.QueryOver<Product>()</p>
+
+<pre><code>.List&lt;Product&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Which yields the following SQL:</p>
+
+<p>```sql</p>
+
+<pre><code>SELECT
+    this_.BusinessEntityID as Business1_0_1_,
+    -- More employee fields
+FROM
+    HumanResources.Employee this_
+</code></pre>
+
+<p><code>
+... And then a second query for the `Product`s:
+</code>sql</p>
+
+<pre><code>SELECT
+    this_.ProductID as ProductID7_0_
+    -- More product fields
+FROM
+    Production.Product this_
+</code></pre>
+
+<p><code>``
+This would work fine, but NHibernate is sending two separate queries to the database when we can accomplish getting those results with only one using</code>.Future<T>`:</p>
+
+<p>```csharp
+// Batch the two queries together
+IEnumerable<Employee> employees = session.QueryOver<Employee>()</p>
+
+<pre><code>.Future&lt;Employee&gt;();
+</code></pre>
+
+<p>IEnumerable<Product> products = session.QueryOver<Product>()</p>
+
+<pre><code>.Future&lt;Product&gt;();
+</code></pre>
+
+<p>// A single round trip to the database is made here containing both queries
+int numProducts = products.Count();
+```</p>
+
+<p>This generates a single database round trip with both queries when the <code>products.Count()</code> call forces NHibernate to process the <code>Product</code>s query:</p>
+
+<p>```sql
+&mdash; First query:
+SELECT</p>
+
+<pre><code>this_.BusinessEntityID as Business1_0_1_,
+-- More Employee columns
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>HumanResources.Employee this_;
+</code></pre>
+
+<p>&mdash; Second query:
+SELECT</p>
+
+<pre><code>this_.ProductID as ProductID7_0_,
+-- More product columns
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_;
+</code></pre>
+
+<p>```</p>
+
+<p>This can be hugely helpful when querying from multiple sources that don&rsquo;t depend on each other.</p>
+
+<h4><code>FutureValue&lt;T&gt;</code></h4>
+
+<p>The same applies for <code>.FutureValue</code>, which is a deferred version of <code>.SingleOrDefault</code>.</p>
+
+<p>Lets say we wanted a list of all employees and the total number of products. Again, we could write two separate queries:</p>
+
+<p>```csharp
+IList<Employee> employees = session.QueryOver<Employee>()</p>
+
+<pre><code>.List&lt;Employee&gt;();
+</code></pre>
+
+<p>int productsCount = session.QueryOver<Product>()</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .SelectCount(pr =&gt; pr.Id))
+.SingleOrDefault&lt;int&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>As you&rsquo;d expect, this will create two queries and two round-trips to the database:</p>
+
+<p>```sql
+SELECT</p>
+
+<pre><code>this_.BusinessEntityID as Business1_0_1_,
+-- More Employee columns
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>HumanResources.Employee this_
+</code></pre>
+
+<p><code>
+... And then the `Product`s count query:
+</code>sql</p>
+
+<pre><code>SELECT
+    count(this_.ProductID) as y0_
+FROM
+    Production.Product this_
+</code></pre>
+
+<p>```</p>
+
+<p>We can turn this into one query by using <code>Future</code> and <code>FutureValue</code>:</p>
+
+<p>```csharp
+// Batch the two queries together
+IEnumerable<Employee> employees = session.QueryOver<Employee>()</p>
+
+<pre><code>.Future&lt;Employee&gt;();
+</code></pre>
+
+<p>IFutureValue<int> productsCount = session.QueryOver<Product>()</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .SelectCount(pr =&gt; pr.Id))
+.FutureValue&lt;int&gt;();
+</code></pre>
+
+<p>// Access the &ldquo;Value&rdquo; property of IFutureValue, which will execute both queries in one round-trip
+Console.WriteLine(productsCount.Value);
+```</p>
+
+<p>Like our previous example with <code>.Future</code>, this will generate one round-trip to the database with two queries:</p>
+
+<p>```sql
+&mdash; First query:
+SELECT</p>
+
+<pre><code>this_.BusinessEntityID as Business1_0_1_,
+-- More Employee Columns
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>HumanResources.Employee this_;
+</code></pre>
+
+<p>&mdash; Second query:
+SELECT</p>
+
+<pre><code>count(this_.ProductID) as y0_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_;
+</code></pre>
+
+<p>```</p>
+
+<p>Note the return type of the count query. <code>IFutureValue&lt;T&gt;</code> is simply a type that allows NHibernate to give you a deferred <code>SingleOrDefault</code> result. Accessing <code>.Value</code> (just like causing the <code>IEnumerable&lt;T&gt;</code> returned by <code>.Future</code>) will cause the batched queries to execute.</p>
+
+<p>I&rsquo;d highly recommend using <code>.Future</code> and <code>.FutureValue</code> where possible when you need to execute multiple queries at once. You&rsquo;ll save round trips to the database and therefore get results to your users faster.</p>
+
+<h3>Summary</h3>
+
+<p>This post covered different ways to materialize resultsets with NHibernate QueryOver.</p>
+
+<ul>
+<li><code>.SingleOrDefault</code> and <code>.List</code> immediately give you the results</li>
+<li><code>.FutureValue</code> and <code>.Future</code> batch queries and defer execution until one of the results in the batch is needed</li>
+<li><code>.FutureValue</code> and <code>.Future</code> use one round trip to the database instead of several, which is more efficient.</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 4: Transforming]]></title>
