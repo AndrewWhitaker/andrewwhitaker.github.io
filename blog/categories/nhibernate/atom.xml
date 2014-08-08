@@ -4,7 +4,7 @@
   <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-06-28T11:37:28-04:00</updated>
+  <updated>2014-08-08T10:47:58-05:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -14,9 +14,463 @@
 
   
   <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 6: Query Building Techniques]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques/"/>
+    <updated>2014-08-07T16:05:37-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques</id>
+    <content type="html"><![CDATA[<p>In this post, I&rsquo;m going to explain some more advanced techniques for building queries with QueryOver. Practically, this means adding joins and where clauses dynamically. This is actually one of the most powerful abilities of QueryOver so it&rsquo;s worth understanding.</p>
+
+<!-- more -->
+
+
+<p>To make this easier to explain, I&rsquo;m going to use a simple example that I can build on throughout the post.</p>
+
+<h2>The Problem</h2>
+
+<p>Imagine your company is building a page that lists all of the company&rsquo;s available products. On the left hand side, there are a few different filters the user can use to narrow his or her search.</p>
+
+<p>You&rsquo;re immediately faced with a problem: How do I conditionally add where clauses and joins depending on the user&rsquo;s filters? If you&rsquo;re using a pure SQL solution, you would most likely need to build up dynamic SQL and then execute that. This will work fine, but you&rsquo;re immediately faced with a few other problems:</p>
+
+<ul>
+<li><strong>You&rsquo;re more open to SQL injection</strong>. Instead of using a parameterized query, a programmer could modify your query to concatenate user-inputted data into the query.</li>
+<li><strong>You have a big maintainability problem</strong>. You&rsquo;re going to have to deal with giant strings of SQL. This isn&rsquo;t fun to read or modify.</li>
+</ul>
+
+
+<p>Both of these problems apply whether you&rsquo;re building the SQL in a stored procedure or if you&rsquo;re building SQL outside of the database engine (say, in your application layer).</p>
+
+<h2>Solutions with QueryOver</h2>
+
+<p>Using QueryOver to dynamically build queries is an attractive solution because it solves both problems:</p>
+
+<ul>
+<li>NHibernate is building the SQL behind the scenes using parameterized queries, so we don&rsquo;t have to worry about SQL injection.</li>
+<li>Instead of looking at huge amounts of string concatenation, we&rsquo;re looking at more expressive .NET code. As a bonus, this is compiled with our application making it much more maintainable.</li>
+</ul>
+
+
+<p>Lets take a look at how we can dynamically construct queries with QueryOver. Keeping with our example, we&rsquo;ll start with a base query that retrieves information about all products:</p>
+
+<p>Here&rsquo;s the DTO we&rsquo;re projecting to with our queries:</p>
+
+<p>```csharp
+public class ProductDTO
+{</p>
+
+<pre><code>public string Name { get; set; }
+
+public string Color { get; set; }
+
+public decimal ListPrice { get; set; }
+</code></pre>
+
+<p>}
+```</p>
+
+<p>And here&rsquo;s the basic query we&rsquo;ll be building on:</p>
+
+<p>```csharp
+IList<ProductDTO> products = session.QueryOver<Product>()</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .Select(pr =&gt; pr.Name).WithAlias(() =&gt; result.Name)
+    .Select(pr =&gt; pr.Color).WithAlias(() =&gt; result.Color)
+    .Select(pr =&gt; pr.ListPrice).WithAlias(() =&gt; result.ListPrice))
+.TransformUsing(Transformers.AliasToBean&lt;ProductDTO&gt;())
+.List&lt;ProductDTO&gt;();
+</code></pre>
+
+<p>```</p>
+
+<h3>Conditional Restrictions</h3>
+
+<p>Continuing with our example, imagine we have a &ldquo;Color&rdquo; filter where the user can look for products only matching the colors they specify. Since <code>Product.Color</code> is a <code>string</code>, we&rsquo;ll introduce an <code>IEnumerable&lt;string&gt;</code> containing user-specified colors.</p>
+
+<p>Adding this to our query gives us the following:</p>
+
+<p>```csharp
+ProductDTO result = null;</p>
+
+<p>var query = session.QueryOver<Product>();</p>
+
+<p>if (colors != null &amp;&amp; colors.Any())
+{</p>
+
+<pre><code>query.Where(pr =&gt; pr.Color.IsIn(colors.ToArray()));
+</code></pre>
+
+<p>}</p>
+
+<p>IList<ProductDTO> products = query</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .Select(pr =&gt; pr.Name).WithAlias(() =&gt; result.Name)
+    .Select(pr =&gt; pr.Color).WithAlias(() =&gt; result.Color)
+    .Select(pr =&gt; pr.ListPrice).WithAlias(() =&gt; result.ListPrice))
+.TransformUsing(Transformers.AliasToBean&lt;ProductDTO&gt;())
+.List&lt;ProductDTO&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Our query has gotten a little more complicated, but it&rsquo;s still readable. Later on in the post, I&rsquo;ll show one way you can make this a bit more readable.</p>
+
+<h3>Conditional Joins</h3>
+
+<p>Sometimes you&rsquo;ll need to conditionally perform a join. One reason for this would be that a query <em>without</em> the join performs much better and you don&rsquo;t want to join unless you have to.</p>
+
+<p>Lets add another filter to our example. Each <code>Product</code> in our domain has 0 to many <code>ProductReview</code>s. Let&rsquo;s add a filter that allows the user to find only products with a minimum user rating. For example, this would let a user find only products that have at least one rating of 3 stars or higher.</p>
+
+<p>We&rsquo;ll add a <code>minimumRating</code> (a <code>Nullable&lt;int&gt;</code> where <code>null</code> indicates that the filter is not being used) and incorporate that into our query:</p>
+
+<p>```csharp
+ProductDTO result = null;</p>
+
+<p>var query = session.QueryOver<Product>();</p>
+
+<p>if (colors != null &amp;&amp; colors.Any())
+{</p>
+
+<pre><code>query.Where(pr =&gt; pr.Color.IsIn(colors.ToArray()));
+</code></pre>
+
+<p>}</p>
+
+<p>if (minimumRating.HasValue)
+{</p>
+
+<pre><code>ProductReview reviewAlias = null;
+query.JoinAlias(pr =&gt; pr.Reviews, () =&gt; reviewAlias)
+    .Where(() =&gt; reviewAlias.Rating &gt;= minimumRating.Value);
+</code></pre>
+
+<p>}</p>
+
+<p>IList<ProductDTO> products = query</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .Select(pr =&gt; pr.Name).WithAlias(() =&gt; result.Name)
+    .Select(pr =&gt; pr.Color).WithAlias(() =&gt; result.Color)
+    .Select(pr =&gt; pr.ListPrice).WithAlias(() =&gt; result.ListPrice))
+.TransformUsing(Transformers.AliasToBean&lt;ProductDTO&gt;())
+.List&lt;ProductDTO&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>This is still more readable than dynamic SQL, but it&rsquo;s starting to look hairy. If we were to add a few more filters we&rsquo;d have a mess on our hands.</p>
+
+<h3>Refactoring into Extension Methods</h3>
+
+<p>One way to apply our filters conditionally is to use <a href="http://msdn.microsoft.com/en-us/library/bb383977.aspx">extension methods</a>. This will allow us to retain the flow of the QueryOver query so that it&rsquo;s a little easier to read.</p>
+
+<p>Here&rsquo;s a static class containing our extension methods:</p>
+
+<p>```csharp
+public static class ProductQueryExtensions
+{</p>
+
+<pre><code>public static IQueryOver&lt;Product, Product&gt; ApplyColorFilter(
+    this IQueryOver&lt;Product, Product&gt; query,
+    IEnumerable&lt;string&gt; colors)
+{
+    if (colors != null &amp;&amp; colors.Any())
+    {
+        query.Where(pr =&gt; pr.Color.IsIn(colors.ToArray()));
+    }
+
+    return query;
+}
+
+public static IQueryOver&lt;Product, Product&gt; ApplyRatingFilter(
+    this IQueryOver&lt;Product, Product&gt; query,
+    int? minimumRating)
+{
+    if (minimumRating.HasValue)
+    {
+        ProductReview reviewAlias = null;
+
+        query.JoinAlias(pr =&gt; pr.Reviews, () =&gt; reviewAlias)
+            .Where(() =&gt; reviewAlias.Rating &gt;= minimumRating.Value);
+    }
+
+    return query;
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>And here&rsquo;s our updated query using those extension methods:</p>
+
+<p>```csharp
+IList<ProductDTO> products = session.QueryOver<Product>()</p>
+
+<pre><code>.ApplyColorFilter(colors)
+.ApplyRatingFilter(minimumRating)
+.SelectList(list =&gt; list
+    .Select(pr =&gt; pr.Name).WithAlias(() =&gt; result.Name)
+    .Select(pr =&gt; pr.Color).WithAlias(() =&gt; result.Color)
+    .Select(pr =&gt; pr.ListPrice).WithAlias(() =&gt; result.ListPrice))
+.TransformUsing(Transformers.AliasToBean&lt;ProductDTO&gt;())
+.List&lt;ProductDTO&gt;();
+</code></pre>
+
+<p>return products;
+```</p>
+
+<p>This is <em>much</em> easier to read and our filtering logic is in it&rsquo;s own class. As a bonus, it&rsquo;s reusable: we can reuse those same extension methods in another area of our application if we need to.</p>
+
+<p>There are a few problems with this approach though&mdash;so let&rsquo;s address those.</p>
+
+<h4>The extension methods only work on an <code>IQueryOver&lt;Product, Product&gt;</code></h4>
+
+<p>This may not seem like a problem at first, but imagine we changed our query to start at another table. Say, for example, we wanted to start at <code>ProductReview</code> and <em>join</em> to <code>Product</code> instead of <em>starting</em> at <code>Product</code>. In that case, our extension methods would be useless since we aren&rsquo;t working with an <code>IQueryOver&lt;Product, Product&gt;</code> anymore, we&rsquo;re working with an <code>IQueryOver&lt;ProductReview, Product&gt;</code>.</p>
+
+<p>The solution to this problem is to slightly change our extension methods to take advantage of the fact that when we&rsquo;re filtering we only care about <code>TSubType</code> (see <a href="../../../../2014/03/16/queryover-series-part-2-basics/">part 2, Basics and Joining</a> if you need a refresher on <code>TRoot</code> and <code>TSubType</code>):</p>
+
+<p>```csharp
+public static class ProductQueryExtensions
+{</p>
+
+<pre><code>public static IQueryOver&lt;TRoot, Product&gt; ApplyColorFilter&lt;TRoot&gt;(
+    this IQueryOver&lt;TRoot, Product&gt; query,
+    IEnumerable&lt;string&gt; colors)
+{
+    if (colors != null &amp;&amp; colors.Any())
+    {
+        query.Where(pr =&gt; pr.Color.IsIn(colors.ToArray()));
+    }
+
+    return query;
+}
+
+public static IQueryOver&lt;TRoot, Product&gt; ApplyRatingFilter&lt;TRoot&gt;(
+    this IQueryOver&lt;TRoot, Product&gt; query,
+    int? minimumRating)
+{
+    if (minimumRating.HasValue)
+    {
+        ProductReview reviewAlias = null;
+
+        query.JoinAlias(pr =&gt; pr.Reviews, () =&gt; reviewAlias)
+            .Where(() =&gt; reviewAlias.Rating &gt;= minimumRating.Value);
+    }
+
+    return query;
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Now our extension methods will work on any QueryOver query whose <code>TSubType</code> is <code>Product</code>.</p>
+
+<h4>Aliases may need to be passed around</h4>
+
+<p>This is a more subtle problem and requires some understanding of how NHibernate generates SQL from QueryOver code.</p>
+
+<p>Remember that QueryOver is built on top of the Criteria API for querying, and is really just a strongly-typed wrapper for that API using <a href="http://msdn.microsoft.com/en-us/library/bb397951.aspx">expression trees</a>.</p>
+
+<p>What this means for aliases is that NHibernate is using the name of the variable you&rsquo;re using as an alias&mdash;parsing the expression you pass <code>.JoinAlias</code> or <code>.JoinQueryOver</code> into a <code>string</code> that&rsquo;s used with the QueryOver query&rsquo;s underlying criteria query.</p>
+
+<p>This is easiest to see with an example.</p>
+
+<p>Here&rsquo;s an example QueryOver query and its underlying Criteria query, as well as the SQL that&rsquo;s ultimately generated:</p>
+
+<p><strong>QueryOver</strong>:</p>
+
+<p>```csharp
+session.QueryOver<Product>()</p>
+
+<pre><code>.JoinQueryOver(pr =&gt; pr.Reviews, () =&gt; reviewAlias)
+.SelectList(list =&gt; list
+    .SelectGroup(pr =&gt; pr.Id)
+    .SelectMax(() =&gt; reviewAlias.Rating))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p><strong>Criteria</strong>:</p>
+
+<p>```csharp
+session.CreateCriteria(typeof(Product))</p>
+
+<pre><code>.CreateCriteria("Reviews", "reviewAlias")
+.SetProjection(Projections.ProjectionList()
+    .Add(Projections.GroupProperty("Id"))
+    .Add(Projections.Max("reviewAlias.Rating")))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>These generate <em>identical</em> SQL:</p>
+
+<p>```sql
+SELECT</p>
+
+<pre><code>this_.ProductID AS y0_, 
+MAX (reviewalia1_.Rating) AS y1_ 
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_ 
+INNER JOIN Production.ProductReview reviewalia1_ ON 
+    this_.ProductID = reviewalia1_.ProductID 
+</code></pre>
+
+<p>GROUP BY</p>
+
+<pre><code>this_.ProductID 
+</code></pre>
+
+<p>```</p>
+
+<p>The main thing to notice here is that the <em>name</em> of the alias (<code>reviewAlias</code>) we used in the QueryOver query is turned into a <code>string</code> which is ultimately used in the SQL query (<code>reviewalia1_</code>).</p>
+
+<p>What this means is that you <strong>cannot</strong> write code like this:</p>
+
+<p>```csharp
+var query = session.QueryOver<Product>()</p>
+
+<pre><code>.JoinAlias(pr =&gt; pr.Reviews, () =&gt; reviewAlias);
+</code></pre>
+
+<p>FilterQueryByRating(query, reviewAlias);</p>
+
+<p>query</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .SelectGroup(pr =&gt; pr.Id)
+    .SelectMax(() =&gt; reviewAlias.Rating))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>// Include only products with a rating > 2 <br/>
+public static void FilterQueryByRating(</p>
+
+<pre><code>IQueryOver&lt;Product, Product&gt; query, 
+ProductReview reviewAlias)
+</code></pre>
+
+<p>{</p>
+
+<pre><code>query.Where(Restrictions.Gt(Projections.Property(() =&gt; reviewAlias.Rating), 2));
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Do you see the problem? If we were to rename either <code>FilterQueryByRating</code>&rsquo;s <code>reviewAlias</code> parameter <em>or</em> the <code>reviewAlias</code> that the query is using, our query would not work. In other words, this will not work:</p>
+
+<p>```csharp
+// Will explode:
+public static void FilterQueryByRating(</p>
+
+<pre><code>IQueryOver&lt;Product, Product&gt; query, 
+ProductReview productReviewAlias)
+</code></pre>
+
+<p>{</p>
+
+<pre><code>query.Where(Restrictions.Gt(
+    Projections.Property(() =&gt; productReviewAlias.Rating), 2));
+</code></pre>
+
+<p>}
+```</p>
+
+<p>You&rsquo;ll get an error stating &ldquo;could not resolve property: productReviewAlias&hellip;&rdquo;. This is because the alias we&rsquo;re using in the <code>Where</code> clause does not match the one we created when we joined to <code>ProductReview</code>.</p>
+
+<p>This may not seem like a big deal, but you really don&rsquo;t want simply renaming an alias to cause queries to blow up. This is especially true if you&rsquo;re trying to reuse query building methods and you can&rsquo;t guarantee what variable name the user of your method will choose.</p>
+
+<p>To solve this problem, we can create a helper method that will do something similar to what NHibernate is doing under the hood for us&mdash;combine expressions and create a projection from the resulting <code>string</code>:</p>
+
+<p>```csharp
+public static PropertyProjection BuildProjection<T>(</p>
+
+<pre><code>Expression&lt;Func&lt;object&gt;&gt; aliasExpression, 
+Expression&lt;Func&lt;T, object&gt;&gt; propertyExpression)
+</code></pre>
+
+<p>{</p>
+
+<pre><code>string alias = ExpressionProcessor.FindMemberExpression(aliasExpression.Body);
+string property = ExpressionProcessor.FindMemberExpression(propertyExpression.Body);
+
+return Projections.Property(string.Format("{0}.{1}", alias, property));
+</code></pre>
+
+<p>}
+```</p>
+
+<p>(<code>ExpressionProcessor</code> is a class under the <code>NHibernate.Impl</code> namespace)</p>
+
+<p>We&rsquo;ll then update our filtering function to use it:</p>
+
+<p>```csharp
+public static void FilterQueryByRating(</p>
+
+<pre><code>IQueryOver&lt;Product, Product&gt; query, 
+Expression&lt;Func&lt;object&gt;&gt; productReviewAlias)
+</code></pre>
+
+<p>{</p>
+
+<pre><code>PropertyProjection prop = BuildProjection&lt;ProductReview&gt;(
+    productReviewAlias, pr =&gt; pr.Rating);
+
+query.Where(Restrictions.Gt(prop, 2));
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Finally, we need to make a small tweak to our main query:</p>
+
+<p>```csharp
+ProductReview reviewAlias = null;</p>
+
+<p>var query = session.QueryOver<Product>()</p>
+
+<pre><code>.JoinAlias(pr =&gt; pr.Reviews, () =&gt; reviewAlias);
+</code></pre>
+
+<p>FilterQueryByRating(query, () => reviewAlias);</p>
+
+<p>query</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .SelectGroup(pr =&gt; pr.Id)
+    .SelectMax(() =&gt; reviewAlias.Rating))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>This is much more robust: our filtering method doesn&rsquo;t even know what alias the query is using, and if that alias changes or someone decides to use our method in the future, everything will work fine.</p>
+
+<h2>Summary</h2>
+
+<p>I covered a lot in this post, but hopefully it will help you take advantage of QueryOver&rsquo;s most powerful features&mdash;building queries dynamically.</p>
+
+<ul>
+<li>Building queries with dynamic SQL can be a pain, but using QueryOver to dynamically build queries can be much easier and more maintainable.</li>
+<li>Refactoring conditional restrictions and joins into extension methods can keep queries readable and refactor logic into reusable pieces.</li>
+<li>To make those extension methods as robust as possible, we can make the methods generic and therefore more flexible.</li>
+<li>Passing around aliases between methods when building QueryOver queries has some pitfalls and needs some special attention.</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 5: Materializing Results]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/"/>
-    <updated>2014-06-28T10:47:22-04:00</updated>
+    <updated>2014-06-28T09:47:22-05:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results</id>
     <content type="html"><![CDATA[<p>So far I&rsquo;ve been using the <code>.List</code> or <code>.SingleOrDefault</code> methods to actually get results from a query. In this post I&rsquo;ll go into a little more detail about those methods. I&rsquo;ll also cover other ways you can materialize a query&rsquo;s results.</p>
 
@@ -249,7 +703,7 @@ SELECT</p>
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 4: Transforming]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming/"/>
-    <updated>2014-06-19T18:51:00-04:00</updated>
+    <updated>2014-06-19T17:51:00-05:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming</id>
     <content type="html"><![CDATA[<p>You might have noticed that the last post in the series always projects each result row into an <code>object[]</code>. This might have made you wonder if there&rsquo;s a better way to get results from a QueryOver query. Well there is! It&rsquo;s called transforming.</p>
 
@@ -700,7 +1154,7 @@ DateTime dateRetrieved = DateTime.Now;</p>
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 3: Selecting]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/"/>
-    <updated>2014-03-22T11:01:46-04:00</updated>
+    <updated>2014-03-22T10:01:46-05:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming</id>
     <content type="html"><![CDATA[<p>In this post I&rsquo;ll go over building the <code>SELECT</code> statement with NHibernate QueryOver. I&rsquo;ll also cover the different ways you can actually get a result back from your query.</p>
 
