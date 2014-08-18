@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>QueryOver Series - Part 1: Why QueryOver? - Andrew Whitaker</title>
+  <title>Andrew Whitaker</title>
   <meta name="author" content="Andrew Whitaker">
 
   
-  <meta name="description" content="QueryOver is a strongly-typed querying technology built on top of NHibernate&rsquo;s Criteria API. It was introduced in NHibernate 3.0. QueryOver is &hellip;">
+  <meta name="description" content="About one year ago this month I joined StackOverflow and started participating. I wanted to take a few minutes to reflect on my experience the site. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://blog.andrewawhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover/">
+  <link rel="canonical" href="http://blog.andrewawhitaker.com/blog/page/2/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -62,12 +62,15 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div>
-<article class="hentry" role="article">
+      <div class="blog-index">
   
+  
+  
+    <article>
+      
   <header>
     
-      <h1 class="entry-title">QueryOver Series - Part 1: Why QueryOver?</h1>
+      <h1 class="entry-title"><a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 Year of StackOverflow</a></h1>
     
     
       <p class="meta">
@@ -83,96 +86,34 @@
   
 
 
-<time datetime="2014-03-12T21:50:58-05:00" pubdate data-updated="true">Mar 12<span>th</span>, 2014</time>
+<time datetime="2011-11-12T22:16:46-06:00" pubdate data-updated="true">Nov 12<span>th</span>, 2011</time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>QueryOver is a strongly-typed querying technology built on top of NHibernate&rsquo;s Criteria API. It was introduced in NHibernate 3.0. QueryOver is actually quite powerful and flexible, as I aim to demonstrate in this series of blog posts.</p>
+  <div class="entry-content"><p>About one year ago this month I joined <a href="http://www.stackoverflow.com">StackOverflow</a> and started participating. I wanted to take a few minutes to reflect on my experience the site. First off, why did I start answering questions?</p>
 
-<p>There is not much in the way of official documentation for NHibernate in general, and even less for QueryOver. The only article on NHForge that I can find is <a href="http://nhforge.org/blogs/nhibernate/archive/2009/12/17/queryover-in-nh-3-0.aspx">here</a>. While this is a good read for an introduction, it really doesn&rsquo;t do QueryOver justice. There&rsquo;s a lot of capability that&rsquo;s not demonstrated there.</p>
-
-<!-- more -->
-
-
-<h3>Overview of available querying technologies</h3>
-
-<p>If you&rsquo;re using NHibernate, you&rsquo;re probably aware that you have several options when you go to write a query:</p>
-
-<ul>
-<li>SQL (via <code>CreateSQLQuery</code>)</li>
-<li>HQL</li>
-<li>LINQ to NHibernate</li>
-<li>Criteria</li>
-<li>QueryOver</li>
-</ul>
-
-
-<p>Now, in some cases you <em>must</em> use SQL or HQL because of the type of query you&rsquo;re writing. For the vast majority of simple to intermediate queries though, LINQ to NHibernate, QueryOver, and Criteria all seem like viable options.</p>
-
-<h3>Why use QueryOver?</h3>
-
-<p>Let&rsquo;s assume that you&rsquo;re working on a large project and using magic strings everywhere to write queries makes you a bit nervous. People are changing property and class names every day, potentially breaking queries across your application. In this case, your better-looking options are LINQ to NHibernate and QueryOver.</p>
-
-<p>If you&rsquo;ve tried to use LINQ to NHibernate for anything remotely complex, you know you&rsquo;ll run into problems quickly. Currently you <a href="http://stackoverflow.com/q/15590021/497356">can&rsquo;t</a> <a href="http://stackoverflow.com/q/13624959/497356">even</a> <a href="https://nhibernate.jira.com/browse/NH-2379">do a left join</a>. What this means is if you have a left join in your query, or even if you think you&rsquo;ll need one one day, you can&rsquo;t currently use LINQ to NHibernate.</p>
-
-<p>I&rsquo;m not trying to pick on NHibernate&rsquo;s LINQ provider or minimize the amount of work contributors have done towards it; I&rsquo;m just pointing out that it&rsquo;s incomplete and not a great option for querying right now. With this in mind, QueryOver is really your <em>only</em> viable option for writing queries with NHibernate. I&rsquo;m sure the LINQ provider will only get better, but until then QueryOver is a good option.</p>
 </div>
-
-
-  <footer>
-    <p class="meta">
-      
   
-
-<span class="byline author vcard">Posted by <span class="fn">Andrew Whitaker</span></span>
-
-      
-
-
-
-
-
-
-
-
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Read on &rarr;</a>
+    </footer>
   
 
 
-<time datetime="2014-03-12T21:50:58-05:00" pubdate data-updated="true">Mar 12<span>th</span>, 2014</time>
-      
-
-
-    </p>
+    </article>
+  
+  <div class="pagination">
     
-      <div class="sharing">
-  
-  
-  
-</div>
-
+    <a href="/blog/archives">Blog Archives</a>
     
-    <p class="meta">
-      
-        <a class="basic-alignment left" href="/blog/2012/10/08/jqueryui-autocomplete-1-9/" title="Previous Post: jQueryUI Autocomplete 1.9">&laquo; jQueryUI Autocomplete 1.9</a>
-      
-      
-        <a class="basic-alignment right" href="/blog/2014/03/16/queryover-series-part-2-basics/" title="Next Post: QueryOver Series - Part 2: Basics and Joining">QueryOver Series - Part 2: Basics and Joining &raquo;</a>
-      
-    </p>
-  </footer>
-</article>
-
-  <section>
-    <h1>Comments</h1>
-    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a class="next" href="/">Newer &rarr;</a>
+    
+  </div>
 </div>
-  </section>
-
-</div>
-
 <aside class="sidebar">
   
     <section>
@@ -306,7 +247,6 @@
   
 </aside>
 
-
     </div>
   </div>
   <footer role="contentinfo"><p>
@@ -323,10 +263,7 @@
       var disqus_shortname = 'andrewwhitaker';
       
         
-        // var disqus_developer = 1;
-        var disqus_identifier = 'http://blog.andrewawhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover/';
-        var disqus_url = 'http://blog.andrewawhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover/';
-        var disqus_script = 'embed.js';
+        var disqus_script = 'count.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

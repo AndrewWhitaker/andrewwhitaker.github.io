@@ -4,7 +4,7 @@
   <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-08-08T10:47:58-05:00</updated>
+  <updated>2014-08-17T21:53:49-05:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,480 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 7: Using SQL Functions]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions/"/>
+    <updated>2014-08-15T14:46:35-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions</id>
+    <content type="html"><![CDATA[<p>In this post, I&rsquo;ll go over how to use functions built into the database engine. This can be useful when you want to do some work inside of your SQL query rather than do post-processing on the result set you get back.</p>
+
+<!-- more -->
+
+
+<h2>Dialects in NHibernate</h2>
+
+<p>To understand how to use and later build SQL functions, it&rsquo;s helpful to understand how the default SQL functions are registered with NHibernate to begin with.</p>
+
+<p>NHibernate has the concept of a SQL <em>dialect</em>, a vendor-specific flavor of SQL. As you probably know, <a href="http://www.nhforge.org/doc/nh/en/#configuration-optional-dialects">many dialects are supported out of the box</a>. NHibernate represents dialects with a class per supported dialect.</p>
+
+<p>The <code>Dialect</code> base class registers required functions for a dialect using ANSI-92 standards. If a dialect implements a function differently, that dialect must overwrite the base class' implementation with its own.</p>
+
+<p>For example, SQL Server doesn&rsquo;t implement the ANSI-92 <code>TRIM</code> function, so the <code>MsSql2000</code> dialect class uses a different implementation than the base class (which ultimately calls <code>rtrim</code> and <code>ltrim</code> to simulate the ANSI standard).</p>
+
+<p>It&rsquo;s worth looking over the <code>Dialect</code> base class and possibly the dialect class for the database engine you&rsquo;re using to see what functions are already available to you.</p>
+
+<h2>Calling functions from your queries</h2>
+
+<p>There are two ways to actually use SQL functions inside of your queries.</p>
+
+<h3>Using <code>Projections.SqlFunction</code></h3>
+
+<p>Using already registered SQL functions is fairly simple, using <code>Projections.SqlFunction</code>. For example, here&rsquo;s a query that gets every <code>Person</code>&rsquo;s middle name, or &ldquo;Not Applicable&rdquo; if <code>MiddleName</code> is <code>null</code>, using the <code>COALESCE</code> function:</p>
+
+<p><strong>QueryOver</strong>:
+```csharp
+IList<string> middleNames = session.QueryOver<Person>()</p>
+
+<pre><code>.Select(
+    Projections.SqlFunction("coalesce", NHibernateUtil.String,
+        Projections.Property&lt;Person&gt;(p =&gt; p.MiddleName),
+        Projections.Constant("Not Applicable"))
+)
+.List&lt;string&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p><strong>SQL</strong>:
+```sql
+SELECT</p>
+
+<pre><code>COALESCE (this_.MiddleName, 'Not Applicable') AS y0_ 
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Person.Person this_ 
+</code></pre>
+
+<p>```</p>
+
+<p>This same pattern applies to all SQL functions that you&rsquo;d like to call using <code>Projections.SqlFunction</code>.</p>
+
+<h3>Using <code>ProjectionsExtensions</code></h3>
+
+<p>Inside of a QueryOver query, there&rsquo;s actually a better way to call many of the most common SQL functions. The <code>ProjectionsExtensions</code> class inside of the <code>NHibernate.Criterion</code> namespace contains extension methods that are parsed into SQL function calls.</p>
+
+<p>For example, here&rsquo;s a query using the <code>.Upper</code> extension method. Note that these extension methods are actually on the object&rsquo;s properties:</p>
+
+<p><strong>QueryOver</strong>:
+```csharp
+IList<string> middleNames = session.QueryOver<Person>()</p>
+
+<pre><code>.Select(p =&gt; p.FirstName.Upper())
+.List&lt;string&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p><strong>SQL</strong>:
+```sql
+SELECT</p>
+
+<pre><code>UPPER (this_.FirstName) AS y0_ 
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Person.Person this_ 
+</code></pre>
+
+<p>```</p>
+
+<p>This is much cleaner than the alternative using <code>Projections.SqlFunction</code>:</p>
+
+<p>```csharp
+IList<string> names = session.QueryOver<Person>()</p>
+
+<pre><code>.Select(
+    Projections.SqlFunction(
+        "upper",
+        NHibernateUtil.String,
+        Projections.Property&lt;Person&gt;(p =&gt; p.FirstName)))
+.List&lt;string&gt;();
+</code></pre>
+
+<p>```</p>
+
+<h2>Using your own functions</h2>
+
+<p>In most cases, functions you want to use will already be registered in the dialect you&rsquo;re using. In some cases, however, you&rsquo;ll want to add a function that&rsquo;s not been registered. In this section of the post, I&rsquo;ll go over how to add the <code>checksum</code> function in SQL Server. There are a few steps involved in using your own function, I&rsquo;ll go over each one in detail.</p>
+
+<p>There are actually two ways to invoke a custom SQL function from your queries. You can either add the function &ldquo;statically&rdquo; to a custom dialect, or invoke a brand new function &ldquo;dynamically&rdquo; at runtime that&rsquo;s not registered with the dialect.</p>
+
+<h3>Adding your own dialect</h3>
+
+<p>As I discussed earlier, functions are registered in the dialect class representing the database flavor you&rsquo;re using. Since we can&rsquo;t modify those classes directly to register our function, we&rsquo;ll create a new dialect that&rsquo;s a subclass of the one we&rsquo;re using.</p>
+
+<p>Since I&rsquo;m using SQL Server in this example, I&rsquo;ll create a custom dialect that&rsquo;s a subclass of <code>MsSql2012Dialect</code>.</p>
+
+<p>```csharp
+using NHibernate;
+using NHibernate.Dialect;
+using NHibernate.Dialect.Function;</p>
+
+<p>public class AdventureWorksDialect : MsSql2012Dialect
+{</p>
+
+<pre><code>public AdventureWorksDialect()
+{
+    this.RegisterFunction("checksum", new StandardSQLFunction("checksum", NHibernateUtil.Int32));
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Then, we need to make sure our application is using the new dialect. We can do this either in our configuration code:</p>
+
+<p>```csharp
+var cfg = new Configuration()</p>
+
+<pre><code>.Configure()
+.DataBaseIntegration(db =&gt;
+{
+    db.Dialect&lt;AdventureWorksDialect&gt;();
+});
+</code></pre>
+
+<p>```</p>
+
+<p>Or, in our config file:</p>
+
+<p>```xml
+&lt;hibernate-configuration xmlns=&ldquo;urn:nhibernate-configuration-2.2&rdquo;>
+  &lt;session-factory></p>
+
+<pre><code>&lt;property name="show_sql"&gt;false&lt;/property&gt;
+&lt;property name="connection.driver_class"&gt;NHibernate.Driver.Sql2008ClientDriver&lt;/property&gt;
+&lt;property name="dialect"&gt;AdventureWorks.Database.AdventureWorksDialect&lt;/property&gt;
+&lt;property name="connection.connection_string_name"&gt;AdventureWorks&lt;/property&gt;
+</code></pre>
+
+<p>  &lt;/session-factory>
+&lt;/hibernate-configuration>
+```</p>
+
+<h4>Calling the function using <code>Projections.SqlFunction</code></h4>
+
+<p>If all you want to do is call a function using <code>Projections.SqlFunction</code>, you&rsquo;re basically done. All you need to do is call the function:</p>
+
+<p>```csharp
+IList<int> checksums = session.QueryOver<Product>()</p>
+
+<pre><code>.Select(Projections.SqlFunction(
+    "checksum",
+    NHibernateUtil.Int32,
+    Projections.Property&lt;Product&gt;(p =&gt; p.Id),
+    Projections.Property&lt;Product&gt;(p =&gt; p.Name)))
+.List&lt;int&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>This will yield the following SQL:</p>
+
+<p>```sql
+SELECT</p>
+
+<pre><code>CHECKSUM (this_.ProductID, this_.Name) AS y0_ 
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_ 
+</code></pre>
+
+<p>```</p>
+
+<h4>Creating a custom projections class</h4>
+
+<p>Using <code>Projections.SqlFunction</code> isn&rsquo;t quite satisfactory, especially after seeing the built-in <code>ProjectionExtensions</code>. We can easily create a <code>CustomProjections</code> class that provides some syntactic sugar for calling our custom function:</p>
+
+<p>```csharp
+public static class CustomProjections
+{</p>
+
+<pre><code>public static IProjection Checksum(params Expression&lt;Func&lt;object&gt;&gt;[] properties)
+{
+    return Checksum(properties.Select(Projections.Property).ToArray());
+}
+
+public static IProjection Checksum(params IProjection[] projections)
+{
+    return Projections.SqlFunction("checksum", NHibernateUtil.Int32, projections);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Notice that we have two overloads of <code>Checksum</code>, one that takes an array of <code>Expression&lt;Func&lt;object&gt;&gt;</code>s and another that takes an array of <code>IProjection</code>s.</p>
+
+<p>Using the <code>Expression&lt;Func&lt;object&gt;&gt;[]</code> overload is convenient when we don&rsquo;t need to combine the use of <code>checksum</code> with other functions, for example:</p>
+
+<p>```csharp
+IList<int> checksums = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.Select(CustomProjections.Checksum(
+    () =&gt; productAlias.Name,
+    () =&gt; productAlias.Id))
+.List&lt;int&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Using the <code>IProjection[]</code> overload is useful when we need to supply <code>checksum</code> with the result of calling <em>another</em> function, say <code>avg</code>:</p>
+
+<p><code>``csharp
+// Get the</code>checksum` of the average price for each sell start date.
+IList&lt;object[]> checksums = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .SelectGroup(p =&gt; p.SellStartDate)
+    .Select(
+        CustomProjections.Checksum(
+            Projections.Avg(
+                Projections.Property(() =&gt; productAlias.ListPrice)))
+    ))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<h4><code>StandardSQLFunction</code> and <code>SQLFunctionTemplate</code></h4>
+
+<p>If you look through <a href="https://github.com/nhibernate/nhibernate-core/tree/master/src/NHibernate/Dialect/Function">NHibernate&rsquo;s implementations of various SQL functions</a>, you might notice that many use <code>StandardSQLFunction</code> and <code>SQLFunctionTemplate</code>. These should take care of most of your custom function needs. If not, you can always implement <code>ISQLFunction</code> and create your own implementation.</p>
+
+<h5><code>StandardSQLFunction</code></h5>
+
+<p>We used <code>StandardSQLFunction</code> to implement our <code>checksum</code> example. Basically, <code>StandardSQLFunction</code> allows you to implement a SQL function that takes an arbitrary number of arguments and returns a scalar value.</p>
+
+<h5><code>SQLFunctionTemplate</code></h5>
+
+<p><code>SQLFunctionTemplate</code> is a bit more sophisticated, and you can use it to implement SQL functions with a <em>template</em>, like the name implies. This is typically useful when you want to require a function to have a specific number of arguments.</p>
+
+<p>An example of this would be the <code>stuff</code> <a href="http://msdn.microsoft.com/en-us/library/ms188043.aspx">function in SQL Server</a>. This function inserts one string into another string, deleting the specified number of characters from the first string at a start index, then inserts the second string.</p>
+
+<p>For example, here&rsquo;s how you could use <code>stuff</code> to replace &ldquo;C++&rdquo; with &ldquo;C#&rdquo;:</p>
+
+<p><code>csharp
+select stuff('C++', 2, 2, '#')
+</code></p>
+
+<p>Since <code>stuff</code> has a fixed number of parameters, it&rsquo;s a good candidate for <code>SQLFunctionTemplate</code>. All we have to do to register it in our dialect is add the following line:</p>
+
+<p><code>csharp
+this.RegisterFunction("stuff", new SQLFunctionTemplate(NHibernateUtil.Int32, "stuff(?1, ?2, ?3, ?4)"));
+</code></p>
+
+<p>Here, we&rsquo;re basically just saying that <code>stuff</code> is a function whose syntax is invoking the <code>stuff</code> function with exactly four parameters.</p>
+
+<p>We&rsquo;ll add a few more static methods to our <code>CustomProjections</code> class, since there are several ways we might want to call this function, we&rsquo;ll provide several overloads:</p>
+
+<p>```csharp
+// Usage: CustomProjections.Stuff(() => alias.Property, 1, 2, () => alias.OtherProperty)
+public static IProjection Stuff(Expression&lt;Func<object>> characterExpression, int start, int length, Expression&lt;Func<object>> replaceWithExpression)
+{</p>
+
+<pre><code>return Stuff(Projections.Property(characterExpression), start, length, Projections.Property(replaceWithExpression));
+</code></pre>
+
+<p>}</p>
+
+<p>// Usage: CustomProjections.Stuff(Projections.Property(..), 1, 2, Projections.Constant(&hellip;))
+public static IProjection Stuff(IProjection characterExpression, int start, int length, IProjection replaceWithExpression)
+{</p>
+
+<pre><code>return Projections.SqlFunction("stuff", NHibernateUtil.String, characterExpression, Projections.Constant(start), Projections.Constant(length), replaceWithExpression);
+</code></pre>
+
+<p>}</p>
+
+<p>// Usage: CustomProjections.Stuff(() => alias.Property, 1, 2, &ldquo;Replacement&rdquo;)
+public static IProjection Stuff(Expression&lt;Func<object>> characterExpression, int start, int length, string replaceWithExpression)
+{</p>
+
+<pre><code>return Stuff(Projections.Property(characterExpression), start, length, Projections.Constant(replaceWithExpression));
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Here&rsquo;s an example of how it would be used:</p>
+
+<p>```csharp
+IList<string> stuffResults = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .Select(
+        CustomProjections.Stuff(() =&gt; productAlias.Name, 0, 2, "PR")
+    ))
+.List&lt;string&gt;();
+</code></pre>
+
+<p>```</p>
+
+<h3>Invoking new functions at runtime</h3>
+
+<p>If, for some reason, you don&rsquo;t want to create a custom dialect and register functions there, you can still invoke an unregistered SQL function. There&rsquo;s an overload of <code>Projections.SqlFunction</code> that takes an <code>ISQLFunction</code> that you can define at runtime. For example, if we had not registered our <code>checksum</code> function, you could call it dynamically like this:</p>
+
+<p>```csharp
+Projections.SqlFunction(</p>
+
+<pre><code>new StandardSQLFunction("checksum"),
+NHibernateUtil.Int32,
+Projections.Property(() =&gt; productAlias.Name),
+Projections.Property(() =&gt; productAlias.Id)
+</code></pre>
+
+<p>```</p>
+
+<p>Here, we&rsquo;re defining and using the <code>checksum</code> function in one shot.</p>
+
+<p>There <em>is</em> a disadvantage to using this method. When you register a function with the dialect instead, NHibernate adds the function to an internal cache and reuses the function definition whenever you access it by name.</p>
+
+<p>Creating a new <code>checksum</code> function every time we needed to call the SQL Server <code>checksum</code> function would be wasteful&mdash;it would be better to define the function once and have NHibernate cache and reuse it.</p>
+
+<p>However, we may want to leverage invoking a function dynamically to take care of special SQL functions, like SQL Server&rsquo;s <code>datediff</code> function.</p>
+
+<h4>Implementing SQL Server&rsquo;s <code>datediff</code> function.</h4>
+
+<p>SQL Server has a <a href="http://msdn.microsoft.com/en-us/library/ms189794%28SQL.90%29.aspx">function</a> called <code>datediff</code> that returns the number of &ldquo;date parts&rdquo; between a given start and end date.</p>
+
+<p>At first glance, it seems like we could register <code>datediff</code> using <code>SQLFunctionTemplate</code>:</p>
+
+<p><code>csharp
+new SQLFunctionTemplate("datediff(?1, ?2, ?3)")
+</code></p>
+
+<p>The problem here is that <code>datediff</code>&rsquo;s first parameter is a SQL server keyword and <em>cannot</em> be supplied as a variable. According to MSDN:</p>
+
+<blockquote><p>These dateparts and abbreviations cannot be supplied as a user-declared variable.</p></blockquote>
+
+<p>So that means we can&rsquo;t call <code>datediff</code> and supply the <code>datepart</code> dynamically. We could register a function for every possible version of <code>datediff</code> and name them all slightly differently:</p>
+
+<p><code>csharp
+RegisterFunction("datediff-yr", new SQLFunctionTemplate("datediff(yy, ?1, ?2)"));
+RegisterFunction("datediff-dd", new SQLFunctionTemplate("datediff(dd, ?1, ?2)"));
+/* etc, for each valid datepart */
+</code></p>
+
+<p>I&rsquo;m not sure about you but this makes me cringe. Luckily there&rsquo;s a better solution. We can use NHibernate&rsquo;s ability to run an arbitrary, unregistered SQL function to dynamically create and execute the various versions of <code>datediff</code>. Here&rsquo;s the code:</p>
+
+<p>```csharp
+public static class DateProjections
+{</p>
+
+<pre><code>private const string DateDiffFormat = "datediff({0}, ?1, ?2)";
+
+public static IProjection DateDiff(
+    string datepart, 
+    Expression&lt;Func&lt;object&gt;&gt; startDate, 
+    Expression&lt;Func&lt;object&gt;&gt; endDate)
+{
+    // Build the function template based on the date part.
+    string functionTemplate = string.Format(DateDiffFormat, datepart);
+
+    return Projections.SqlFunction(
+        new SQLFunctionTemplate(NHibernateUtil.Int32, functionTemplate),
+        NHibernateUtil.Int32,
+        Projections.Property(startDate),
+        Projections.Property(endDate));
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Now, we&rsquo;re able to write queries using any date part we want without having to register a separate function for each date part. For example, here&rsquo;s a query that gets the <code>datediff</code> in days, quarters, and months:</p>
+
+<p>```csharp
+IList&lt;object[]> checksums = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .Select(DateProjections.DateDiff("dd", () =&gt; productAlias.SellStartDate, () =&gt; productAlias.SellEndDate))
+    .Select(DateProjections.DateDiff("qq", () =&gt; productAlias.SellStartDate, () =&gt; productAlias.SellEndDate))
+    .Select(DateProjections.DateDiff("mm", () =&gt; productAlias.SellStartDate, () =&gt; productAlias.SellEndDate)))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>This still isn&rsquo;t perfect. You might have realized that we&rsquo;re still at a disadvantage since we&rsquo;re not using cached versions of our function definitions. One good solution to this is to use our own cache for the various <code>datediff</code> flavors. Here&rsquo;s what our class looks like with that modification:</p>
+
+<p>```csharp
+public static class DateProjections
+{</p>
+
+<pre><code>private const string DateDiffFormat = "datediff({0}, ?1, ?2)";
+
+// Maps datepart to an ISQLFunction
+private static Dictionary&lt;string, ISQLFunction&gt; DateDiffFunctionCache = 
+    new Dictionary&lt;string, ISQLFunction&gt;();
+
+public static IProjection DateDiff(
+    string datepart, 
+    Expression&lt;Func&lt;object&gt;&gt; startDate, 
+    Expression&lt;Func&lt;object&gt;&gt; endDate)
+{
+    ISQLFunction sqlFunction = GetDateDiffFunction(datepart);
+
+    return Projections.SqlFunction(
+        sqlFunction,
+        NHibernateUtil.Int32,
+        Projections.Property(startDate),
+        Projections.Property(endDate));
+}
+
+private static ISQLFunction GetDateDiffFunction(string datepart)
+{
+    ISQLFunction sqlFunction;
+
+    if (!DateDiffFunctionCache.TryGetValue(datepart, out sqlFunction))
+    {
+        string functionTemplate = string.Format(DateDiffFormat, datepart);
+        sqlFunction = new SQLFunctionTemplate(NHibernateUtil.Int32, functionTemplate);
+
+        DateDiffFunctionCache[datepart] = sqlFunction;
+    }
+
+    return sqlFunction;
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Now we&rsquo;re caching our function definitions so that we&rsquo;re not redefining versions of <code>datediff</code> unnecessarily.</p>
+
+<p>Another enhancement that probably should be made is to make the <code>datepart</code> argument of <code>DateProjections.DateDiff</code> strongly typed. A good solution there would be to use an <code>enum</code> defining the possible <code>datepart</code> values. Then you could use a <code>Dictionary&lt;DatePart, string&gt;</code> to map from <code>enum</code> values to strings.</p>
+
+<h2>Summary</h2>
+
+<p>Calling built-in SQL functions from NHibernate queries has been written about many times before, but hopefully I was able to shed some light on how those functions are registered and invoked. In summary:</p>
+
+<ul>
+<li>You can either register a function by using a custom dialect and invoke it by name later, or define and invoke the function in one step.</li>
+<li>Registering a function with a custom dialect is often the best option since the function definition is cached and reused automatically by NHibernate.</li>
+<li><code>StandardSQLFunction</code> and <code>SQLFunctionTemplate</code> are implementations of <code>ISQLFunction</code> that enable easily defining SQL functions.</li>
+<li>Using a custom projections class is a useful abstraction to lay on top of <code>Projections.SqlFunction</code> to make code easier to read and more robust.</li>
+<li>You can use NHibernate&rsquo;s ability to call SQL functions at runtime to implement the <code>datediff</code> function in a clean way.</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 6: Query Building Techniques]]></title>
