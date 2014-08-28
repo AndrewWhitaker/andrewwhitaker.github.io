@@ -9,7 +9,7 @@
   <meta name="author" content="Andrew Whitaker">
 
   
-  <meta name="description" content="About one year ago this month I joined StackOverflow and started participating. I wanted to take a few minutes to reflect on my experience the site. &hellip;">
+  <meta name="description" content="I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -70,6 +70,47 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A Simple jQuery Aggregation Plugin</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-12-22T17:39:02-06:00" pubdate data-updated="true">Dec 22<span>nd</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2011/11/12/retrospective-1-year-of-stackoverflow/">Retrospective: 1 Year of StackOverflow</a></h1>
     
     
@@ -121,6 +162,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/">Getting NHibernate Up and Running Quickly</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/08/15/queryover-series-part-7-using-sql-functions/">QueryOver Series - Part 7: Using SQL Functions</a>
       </li>
     
@@ -134,10 +179,6 @@
     
       <li class="post">
         <a href="/blog/2014/06/19/queryover-series-part-4-transforming/">QueryOver Series - Part 4: Transforming</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/">QueryOver Series - Part 3: Selecting</a>
       </li>
     
   </ul>

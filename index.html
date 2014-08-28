@@ -9,7 +9,7 @@
   <meta name="author" content="Andrew Whitaker">
 
   
-  <meta name="description" content="In this post, I&rsquo;ll go over how to use functions built into the database engine. This can be useful when you want to do some work inside of your &hellip;">
+  <meta name="description" content="NHibernate can seem like a daunting library to set up. The configuration can get quite complicated&mdash;XML mappings, code mappings, mapping &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -64,6 +64,49 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/">Getting NHibernate Up and Running Quickly</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-28T10:44:06-05:00" pubdate data-updated="true">Aug 28<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>NHibernate can seem like a daunting library to set up. The configuration can get quite complicated&mdash;XML mappings, code mappings, mapping conventions, dialects, logging, etc. Sometimes you just want to get something up and running to test out a query or play around with a database other than your primary one. In this post, I&rsquo;ll show you how to get up and running with NHibernate in about 5 minutes and in around 50 lines of code in <a href="http://www.linqpad.net">LINQPad</a>.</p>
+
+<p>This assumes you already have a database configured and ready to create new tables and connect to with NHibernate.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -438,47 +481,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">jQuery.aggregate: A Simple jQuery Aggregation Plugin</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-12-22T17:39:02-06:00" pubdate data-updated="true">Dec 22<span>nd</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -494,6 +496,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/">Getting NHibernate Up and Running Quickly</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/08/15/queryover-series-part-7-using-sql-functions/">QueryOver Series - Part 7: Using SQL Functions</a>
       </li>
     
@@ -507,10 +513,6 @@
     
       <li class="post">
         <a href="/blog/2014/06/19/queryover-series-part-4-transforming/">QueryOver Series - Part 4: Transforming</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/">QueryOver Series - Part 3: Selecting</a>
       </li>
     
   </ul>

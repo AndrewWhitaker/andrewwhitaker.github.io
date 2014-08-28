@@ -4,7 +4,7 @@
   <title><![CDATA[Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-08-17T21:53:49-05:00</updated>
+  <updated>2014-08-28T12:28:14-05:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,356 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Getting NHibernate Up and Running Quickly]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/"/>
+    <updated>2014-08-28T10:44:06-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly</id>
+    <content type="html"><![CDATA[<p>NHibernate can seem like a daunting library to set up. The configuration can get quite complicated&mdash;XML mappings, code mappings, mapping conventions, dialects, logging, etc. Sometimes you just want to get something up and running to test out a query or play around with a database other than your primary one. In this post, I&rsquo;ll show you how to get up and running with NHibernate in about 5 minutes and in around 50 lines of code in <a href="http://www.linqpad.net">LINQPad</a>.</p>
+
+<p>This assumes you already have a database configured and ready to create new tables and connect to with NHibernate.</p>
+
+<!-- more -->
+
+
+<h2>1. Create your database table</h2>
+
+<p>I&rsquo;ll use MySQL as an example, but first you&rsquo;ll need to create a database table (or a few tables) that you want to play around with. I&rsquo;ll create a <code>person</code> table:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="o">`</span><span class="n">person</span><span class="o">`</span> <span class="p">(</span>
+</span><span class='line'>  <span class="o">`</span><span class="n">Id</span><span class="o">`</span> <span class="nb">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+</span><span class='line'>  <span class="o">`</span><span class="n">FirstName</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  <span class="o">`</span><span class="n">BirthDate</span><span class="o">`</span> <span class="nb">date</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  <span class="o">`</span><span class="n">LastName</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="o">`</span><span class="n">Id</span><span class="o">`</span><span class="p">)</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>2. Prepare your LINQPad Query</h2>
+
+<p>After creating a new query in LINQPad, set the <strong>Language</strong> to <strong>C# Program</strong>, then press F4 to open the <strong>Query Properties</strong> window. From here you can browse to the &ldquo;NHibernate.dll&rdquo; file that you&rsquo;d like to use. I&rsquo;ll also add MySql.Data.dll since I need to interact with a MySql database:</p>
+
+<p><img src="http://blog.andrewawhitaker.com/images/posts/2014-08-28-getting-nhibernate-up-and-running-quickly-linqpad-query-properties/linqpad-query-properties.png"></p>
+
+<p>Next, go over to the <strong>Additional Namespace Imports</strong> tab and add the following namespaces:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">NHibernate</span>
+</span><span class='line'><span class="n">NHibernate</span><span class="p">.</span><span class="n">Cfg</span>
+</span><span class='line'><span class="n">NHibernate</span><span class="p">.</span><span class="n">Cfg</span><span class="p">.</span><span class="n">MappingSchema</span>
+</span><span class='line'><span class="n">NHibernate</span><span class="p">.</span><span class="n">Dialect</span>
+</span><span class='line'><span class="n">NHibernate</span><span class="p">.</span><span class="n">Mapping</span><span class="p">.</span><span class="n">ByCode</span>
+</span><span class='line'><span class="n">NHibernate</span><span class="p">.</span><span class="n">Mapping</span><span class="p">.</span><span class="n">ByCode</span><span class="p">.</span><span class="n">Conformist</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Okay, that&rsquo;s all we should need to get started with actually writing the query.</p>
+
+<h2>3. Add some configuration code</h2>
+
+<p>Next we&rsquo;ll actually configure NHibernate to connect to the database correctly. Normally you would configure NHibernate via your project&rsquo;s *.config file, but since we&rsquo;re using LINQPad, a configuration file isn&rsquo;t really feasible. Luckily, we can configure NHibernate in C# using the <code>.DatabaseIntegration</code> extension method:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Configuration</span> <span class="n">cfg</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Configuration</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">DataBaseIntegration</span><span class="p">(</span><span class="n">db</span> <span class="p">=&gt;</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">ConnectionString</span> <span class="p">=</span> <span class="s">&quot;Server=127.0.0.1;Database=test;Uid=nhibernate;Pwd=nhibernate;&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">Dialect</span><span class="p">&lt;</span><span class="n">MySQLDialect</span><span class="p">&gt;();</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here I&rsquo;m just specifying the dialect I&rsquo;d like to use (<code>MySQLDialect</code>) and setting my connection string.</p>
+
+<h2>4. Add an entity and mapping</h2>
+
+<p>Since I created a <code>person</code> table earlier, I&rsquo;m going to go ahead and create a <code>Person</code> class and <code>PersonMap</code> to map that class using NHibernate&rsquo;s mapping-by-code. This code goes just under the <code>Main</code> method we filled in earlier. Here&rsquo;s the entity:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">Person</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">int</span> <span class="n">Id</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">string</span> <span class="n">FirstName</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">string</span> <span class="n">LastName</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="n">DateTime</span> <span class="n">BirthDate</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here&rsquo;s the mapping:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">PersonMap</span> <span class="p">:</span> <span class="n">ClassMapping</span><span class="p">&lt;</span><span class="n">Person</span><span class="p">&gt;</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="nf">PersonMap</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Table</span><span class="p">(</span><span class="s">&quot;person&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Id</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Id</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">FirstName</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">LastName</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">BirthDate</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>5. Add code to process the mapping we added</h2>
+
+<p>The last configuration step is to modify our <code>Main</code> method to incorporate our mappings into the configuration. We&rsquo;ll modify our <code>Main</code> method as follows:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Configuration</span> <span class="n">cfg</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Configuration</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">DataBaseIntegration</span><span class="p">(</span><span class="n">db</span> <span class="p">=&gt;</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">ConnectionString</span> <span class="p">=</span> <span class="s">&quot;Server=127.0.0.1;Database=test;Uid=nhibernate;Pwd=nhibernate;&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">Dialect</span><span class="p">&lt;</span><span class="n">MySQLDialect</span><span class="p">&gt;();</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Add the mapping we defined: */</span>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">mapper</span> <span class="p">=</span> <span class="k">new</span> <span class="n">ModelMapper</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">mapper</span><span class="p">.</span><span class="n">AddMappings</span><span class="p">(</span><span class="n">Assembly</span><span class="p">.</span><span class="n">GetExecutingAssembly</span><span class="p">().</span><span class="n">GetExportedTypes</span><span class="p">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">HbmMapping</span> <span class="n">mapping</span> <span class="p">=</span> <span class="n">mapper</span><span class="p">.</span><span class="n">CompileMappingForAllExplicitlyAddedEntities</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">cfg</span><span class="p">.</span><span class="n">AddMapping</span><span class="p">(</span><span class="n">mapping</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>6. Create an <code>ISessionFactory</code>, <code>ISession</code> and <code>ITransaction</code> and write a query</h2>
+
+<p>Ok the last step is to build an <code>ISessionFactory</code> from our configuration. From there we can get an <code>ISession</code> and an <code>ITransaction</code> to actually work with the entities we&rsquo;ve created and mapped. We&rsquo;ll modify the <code>Main</code> method again as follows:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Configuration</span> <span class="n">cfg</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Configuration</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">DataBaseIntegration</span><span class="p">(</span><span class="n">db</span> <span class="p">=&gt;</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">ConnectionString</span> <span class="p">=</span> <span class="s">&quot;Server=127.0.0.1;Database=test;Uid=nhibernate;Pwd=nhibernate;&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">Dialect</span><span class="p">&lt;</span><span class="n">MySQLDialect</span><span class="p">&gt;();</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Add the mapping we defined: */</span>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">mapper</span> <span class="p">=</span> <span class="k">new</span> <span class="n">ModelMapper</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">mapper</span><span class="p">.</span><span class="n">AddMappings</span><span class="p">(</span><span class="n">Assembly</span><span class="p">.</span><span class="n">GetExecutingAssembly</span><span class="p">().</span><span class="n">GetExportedTypes</span><span class="p">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">HbmMapping</span> <span class="n">mapping</span> <span class="p">=</span> <span class="n">mapper</span><span class="p">.</span><span class="n">CompileMappingForAllExplicitlyAddedEntities</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">cfg</span><span class="p">.</span><span class="n">AddMapping</span><span class="p">(</span><span class="n">mapping</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Create a session and execute a query: */</span>
+</span><span class='line'>    <span class="k">using</span> <span class="p">(</span><span class="n">ISessionFactory</span> <span class="n">factory</span> <span class="p">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">BuildSessionFactory</span><span class="p">())</span>
+</span><span class='line'>    <span class="k">using</span> <span class="p">(</span><span class="n">ISession</span> <span class="n">session</span> <span class="p">=</span> <span class="n">factory</span><span class="p">.</span><span class="n">OpenSession</span><span class="p">())</span>
+</span><span class='line'>    <span class="k">using</span> <span class="p">(</span><span class="n">ITransaction</span> <span class="n">tx</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">BeginTransaction</span><span class="p">())</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">session</span><span class="p">.</span><span class="n">Get</span><span class="p">&lt;</span><span class="n">Person</span><span class="p">&gt;(</span><span class="m">1</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">tx</span><span class="p">.</span><span class="n">Commit</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&hellip;And that&rsquo;s really it. If you hit <strong>F5</strong> or the green play button in LINQPad, your query should run, assuming you have everything configured correctly. Here&rsquo;s the whole listing below, just in case:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Configuration</span> <span class="n">cfg</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Configuration</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">DataBaseIntegration</span><span class="p">(</span><span class="n">db</span> <span class="p">=&gt;</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">ConnectionString</span> <span class="p">=</span> <span class="s">&quot;Server=127.0.0.1;Database=test;Uid=nhibernate;Pwd=nhibernate;&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">db</span><span class="p">.</span><span class="n">Dialect</span><span class="p">&lt;</span><span class="n">MySQLDialect</span><span class="p">&gt;();</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Add the mapping we defined: */</span>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">mapper</span> <span class="p">=</span> <span class="k">new</span> <span class="n">ModelMapper</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">mapper</span><span class="p">.</span><span class="n">AddMappings</span><span class="p">(</span><span class="n">Assembly</span><span class="p">.</span><span class="n">GetExecutingAssembly</span><span class="p">().</span><span class="n">GetExportedTypes</span><span class="p">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">HbmMapping</span> <span class="n">mapping</span> <span class="p">=</span> <span class="n">mapper</span><span class="p">.</span><span class="n">CompileMappingForAllExplicitlyAddedEntities</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">cfg</span><span class="p">.</span><span class="n">AddMapping</span><span class="p">(</span><span class="n">mapping</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Create a session and execute a query: */</span>
+</span><span class='line'>    <span class="k">using</span> <span class="p">(</span><span class="n">ISessionFactory</span> <span class="n">factory</span> <span class="p">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">BuildSessionFactory</span><span class="p">())</span>
+</span><span class='line'>    <span class="k">using</span> <span class="p">(</span><span class="n">ISession</span> <span class="n">session</span> <span class="p">=</span> <span class="n">factory</span><span class="p">.</span><span class="n">OpenSession</span><span class="p">())</span>
+</span><span class='line'>    <span class="k">using</span> <span class="p">(</span><span class="n">ITransaction</span> <span class="n">tx</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">BeginTransaction</span><span class="p">())</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">session</span><span class="p">.</span><span class="n">Get</span><span class="p">&lt;</span><span class="n">Person</span><span class="p">&gt;(</span><span class="m">1</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">tx</span><span class="p">.</span><span class="n">Commit</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">PersonMap</span> <span class="p">:</span> <span class="n">ClassMapping</span><span class="p">&lt;</span><span class="n">Person</span><span class="p">&gt;</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="nf">PersonMap</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Table</span><span class="p">(</span><span class="s">&quot;person&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Id</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">Id</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">FirstName</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">LastName</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">BirthDate</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">Person</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">int</span> <span class="n">Id</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">string</span> <span class="n">FirstName</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">string</span> <span class="n">LastName</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="n">DateTime</span> <span class="n">BirthDate</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Summary</h2>
+
+<p>Hopefully this post will come in handy if you&rsquo;re looking to quickly get NHibernate up and running for some throwaway or experimental code. When you boil the setup down to the very basics it&rsquo;s actually not that bad at all. From here, you can make some configuration changes or enhancements. Two useful configuration options to turn on inside of the <code>.DatabaseIntegration</code> method are the <code>LogFormattedSql</code> property and the <code>LogSqlInConsole</code> property. These will allow you to actually see the SQL that NHibernate is generating.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 7: Using SQL Functions]]></title>
