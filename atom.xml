@@ -4,7 +4,7 @@
   <title><![CDATA[Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-10-24T11:08:02-04:00</updated>
+  <updated>2014-10-24T12:21:09-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,465 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series Part 8: Working with Subqueries]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries/"/>
+    <updated>2014-10-24T12:17:39-04:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries</id>
+    <content type="html"><![CDATA[<p>Subqueries are often extremely useful when building queries. Unfortunately there&rsquo;s not much out there on how to work with subqueries in QueryOver. In this post, I&rsquo;ll dive into how to create the subqueries using QueryOver&rsquo;s various subquery APIs.</p>
+
+<!-- more -->
+
+
+<p>There are two places you can use subqueries in a QueryOver query: the <code>SELECT</code> clause and the <code>WHERE</code> clause. Unfortunately you cannot use a subquery in the <code>FROM</code> clause of a QueryOver query.</p>
+
+<h2>Subqueries in the <code>WHERE</code> clause</h2>
+
+<p>As usual, there are several ways to generate identical SQL using QueryOver. I&rsquo;ll go over each one in detail.</p>
+
+<h3><code>.WithSubquery</code></h3>
+
+<p><code>.WithSubquery</code> is the most straightforward and natural way to create a subquery with QueryOver. Basically, using <code>.WithSubquery</code> allows you to use some property on <code>TSubType</code> (or a property belonging to an alias) with a subquery expression. After calling <code>.WithSubquery</code>, there are several methods that become available:</p>
+
+<ul>
+<li><code>.Where</code></li>
+<li><code>.WhereAll</code></li>
+<li><code>.WhereSome</code></li>
+<li><code>.WhereExists</code></li>
+<li><code>.WhereNotExists</code></li>
+<li><code>.WhereProperty</code></li>
+</ul>
+
+
+<p>For the most part these are pretty straightforward, but I&rsquo;ll go over each one.</p>
+
+<h4><code>.Where</code></h4>
+
+<p>You should use <code>.WithSubquery.Where</code> when your subquery returns a scalar value and you want to compare that value (using <code>=</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&gt;=</code>, or <code>&lt;=</code>) with a value from your outer query.</p>
+
+<p>For example, here&rsquo;s a query that finds the <code>Product</code> with the <code>Transaction</code> containing the highest quantity (one <code>Product</code> has many <code>Transactions</code>):</p>
+
+<p><strong>QueryOver</strong>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="kt">var</span> <span class="n">popularProduct</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">WithSubquery</span><span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span>
+</span><span class='line'>        <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Quantity</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Desc</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">As</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;())</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SingleOrDefault</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>SQL</strong>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="o">*</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">WHERE</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="o">=</span> <span class="p">(</span>
+</span><span class='line'>        <span class="k">SELECT</span>
+</span><span class='line'>            <span class="n">TOP</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="n">this_0_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y0_</span>
+</span><span class='line'>        <span class="k">FROM</span>
+</span><span class='line'>            <span class="n">Production</span><span class="p">.</span><span class="n">TransactionHistory</span> <span class="n">this_0_</span>
+</span><span class='line'>        <span class="k">ORDER</span> <span class="k">BY</span>
+</span><span class='line'>            <span class="n">this_0_</span><span class="p">.</span><span class="n">Quantity</span> <span class="k">desc</span>
+</span><span class='line'>    <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The interesting thing to note about the subquery is the <code>.As&lt;T&gt;</code> method at the end. This allows us to compare the <code>Id</code> property from the outer query with the inner query&rsquo;s <code>Product.Id</code> property. This method&rsquo;s sole purpose is to be used inside of a subquery like this so that we can treat the entire QueryOver query as a scalar value for comparison purposes.</p>
+
+<h4><code>.WhereAll</code> and <code>.WhereSome</code></h4>
+
+<p><code>.WithSubquery.WhereAll</code> and <code>.WithSubquery.WhereSome</code> generate SQL that looks similar to the SQL generated by <code>Where</code>, but it uses the <code>all</code> or <code>some</code> operator to modify the comparison. The subquery should return a resultset of one column. Each row in that result is compared with the scalar value from the outer query.</p>
+
+<p>For example, here&rsquo;s a query that finds all <code>Product</code>s who&rsquo;s <code>ListPrice</code> is greater than <em>all</em> of the related <code>ProductCostHistory</code> entries&#8217; <code>StandardCost</code>. <code>ProductCostHistory</code> tracks product cost over time:</p>
+
+<p><strong>QueryOver</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'><span class="kt">var</span> <span class="n">products</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">WithSubquery</span><span class="p">.</span><span class="n">WhereAll</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="n">ListPrice</span> <span class="p">&gt;</span>
+</span><span class='line'>        <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">ProductCostHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">ch</span> <span class="p">=&gt;</span> <span class="n">ch</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">ch</span> <span class="p">=&gt;</span> <span class="n">ch</span><span class="p">.</span><span class="n">StandardCost</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">As</span><span class="p">&lt;</span><span class="kt">decimal</span><span class="p">&gt;())</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>SQL</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="o">*</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">WHERE</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ListPrice</span> <span class="o">&gt;</span> <span class="k">all</span> <span class="p">(</span>
+</span><span class='line'>        <span class="k">SELECT</span>
+</span><span class='line'>            <span class="n">this_0_</span><span class="p">.</span><span class="n">StandardCost</span> <span class="k">as</span> <span class="n">y0_</span>
+</span><span class='line'>        <span class="k">FROM</span>
+</span><span class='line'>            <span class="n">Production</span><span class="p">.</span><span class="n">ProductCostHistory</span> <span class="n">this_0_</span>
+</span><span class='line'>        <span class="k">WHERE</span>
+</span><span class='line'>            <span class="n">this_0_</span><span class="p">.</span><span class="n">ProductID</span> <span class="o">=</span> <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span>
+</span><span class='line'>    <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If you look carefully at the QueryOver, you&rsquo;ll notice that I assigned an alias to the outer <code>Product</code>. This is so that I could correlate the outer query and the inner query.</p>
+
+<p>Using <code>.WhereSome</code> instead would generate SQL using the <code>some</code> operator. This operator returns <code>true</code> if <em>at least one</em> of the values in the resultset from the subquery returns true.</p>
+
+<h4><code>.WhereExists</code> and <code>.WhereNotExists</code></h4>
+
+<p>These two are straightforward. These will generate the SQL you&rsquo;d expect with <code>exists</code> or <code>not exists</code>, respectively. If you&rsquo;re familiar with SQL, you&rsquo;ve probably used these a fair amount. Use <code>.WhereExists</code> to return rows where there&rsquo;s at least one result in the subquery, and use <code>.WhereNotExists</code> to return rows where the subquery returns no results.</p>
+
+<p>Here&rsquo;s an example that returns all products with no transaction history:</p>
+
+<p><strong>QueryOver</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">var</span> <span class="n">productsWithNoTransactions</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">WithSubquery</span><span class="p">.</span><span class="n">WhereNotExists</span><span class="p">(</span>
+</span><span class='line'>        <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Id</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>SQL</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="o">*</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">WHERE</span>
+</span><span class='line'>    <span class="k">not</span> <span class="k">exists</span> <span class="p">(</span>
+</span><span class='line'>        <span class="k">SELECT</span>
+</span><span class='line'>            <span class="n">this_0_</span><span class="p">.</span><span class="n">TransactionID</span> <span class="k">as</span> <span class="n">y0_</span>
+</span><span class='line'>        <span class="k">FROM</span>
+</span><span class='line'>            <span class="n">Production</span><span class="p">.</span><span class="n">TransactionHistory</span> <span class="n">this_0_</span>
+</span><span class='line'>        <span class="k">WHERE</span>
+</span><span class='line'>            <span class="n">this_0_</span><span class="p">.</span><span class="n">ProductID</span> <span class="o">=</span> <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span>
+</span><span class='line'>    <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Using <code>.WithSubquery</code> is the most straightforward way to work with subqueries in the <code>WHERE</code> clause of a query.</p>
+
+<h3>With the <code>Restrictions</code> class</h3>
+
+<p>You can use the <code>Restrictions</code> class to generate SQL within a QueryOver query as well. I won&rsquo;t show everything you can do with the <code>Restrictions</code> class&mdash; it should be pretty straightforward after showing a few examples.</p>
+
+<p>Here&rsquo;s the first example from the previous section:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span>
+</span><span class='line'>        <span class="n">Restrictions</span><span class="p">.</span><span class="n">EqProperty</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span><span class="p">),</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">SubQuery</span><span class="p">(</span>
+</span><span class='line'>                <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Quantity</span><span class="p">)</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">Desc</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">))))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SingleOrDefault</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>I&rsquo;m not sure about you, but to me this is much harder to read and looks much more complex than the example in the previous section.</p>
+
+<p>Usually this syntax is not necessary, but you may find it useful if you&rsquo;re building queries dynamically.</p>
+
+<p>One way to build a list of conditions joined by <code>AND</code> operators is to use <code>Restrictions.Conjunction()</code>. You can call <code>.Add</code> on the <code>Conjunction</code> instance you get back, building a conjunction based on various conditions.</p>
+
+<p>Here&rsquo;s an example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Conjunction</span> <span class="n">conjunction</span> <span class="p">=</span> <span class="n">Restrictions</span><span class="p">.</span><span class="n">Conjunction</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">onlyBiggestTransaction</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">conjunction</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span>
+</span><span class='line'>        <span class="n">Restrictions</span><span class="p">.</span><span class="n">EqProperty</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span><span class="p">),</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">SubQuery</span><span class="p">(</span>
+</span><span class='line'>                <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Quantity</span><span class="p">)</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">Desc</span>
+</span><span class='line'>                    <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">))));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">conjunction</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If you have lots of conditions you&rsquo;re evaluating to build a <code>WHERE</code> clause, I would consider going this route. It&rsquo;s easy to read the final query (starting on L16 above), and the various parts of the <code>Conjunction</code> are also nicely separated from the main query.</p>
+
+<h2>Subqueries in the <code>SELECT</code> clause</h2>
+
+<p>There are two ways to use subqueries in the <code>SELECT</code> clause: <code>SelectSubquery</code> and <code>Projections.Subquery</code>.</p>
+
+<h3><code>SelectSubquery</code></h3>
+
+<p>If you&rsquo;re using a select list (built using <code>QueryOver&lt;TRoot, TSubType&gt;.SelectList(...)</code>), the easiest way to create a subquery in the <code>SELECT</code> clause is to use <code>.SelectSubquery</code>. This works exactly how you&rsquo;d expect it to.</p>
+
+<p>This example gets information about a <code>Product</code> and the highest <code>ProductReview.Rating</code> associated with that product:</p>
+
+<p><strong>QueryOver</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SelectList</span><span class="p">(</span><span class="n">list</span> <span class="p">=&gt;</span> <span class="n">list</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">SelectSubQuery</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">ProductReview</span><span class="p">&gt;()</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Rating</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Rating</span><span class="p">).</span><span class="n">Desc</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Name</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that I&rsquo;m creating a correlated subquery by assigning <code>productAlias</code> in the outer query and then using it in the subquery.</p>
+
+<p><strong>SQL</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">SELECT</span>
+</span><span class='line'>        <span class="n">TOP</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="n">this_0_</span><span class="p">.</span><span class="n">Rating</span> <span class="k">as</span> <span class="n">y0_</span>
+</span><span class='line'>    <span class="k">FROM</span>
+</span><span class='line'>        <span class="n">Production</span><span class="p">.</span><span class="n">ProductReview</span> <span class="n">this_0_</span>
+</span><span class='line'>    <span class="k">WHERE</span>
+</span><span class='line'>        <span class="n">this_0_</span><span class="p">.</span><span class="n">ProductID</span> <span class="o">=</span> <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span>
+</span><span class='line'>    <span class="k">ORDER</span> <span class="k">BY</span>
+</span><span class='line'>        <span class="n">this_0_</span><span class="p">.</span><span class="n">Rating</span> <span class="k">desc</span><span class="p">)</span> <span class="k">as</span> <span class="n">y0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">ProductID</span> <span class="k">as</span> <span class="n">y1_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Name</span> <span class="k">as</span> <span class="n">y2_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Production</span><span class="p">.</span><span class="n">Product</span> <span class="n">this_</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3><code>Projections.Subquery</code></h3>
+
+<p><code>Projections.Subquery</code> can come in handy when building the <code>SELECT</code> clause dynamically. This is especially useful when you&rsquo;re building a <code>SELECT</code> clause using <code>Projections.ProjectionList</code>. Here&rsquo;s the same query from the <code>SelectSubquery</code> example above:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">ProjectionList</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">SubQuery</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">ProductReview</span><span class="p">&gt;()</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Rating</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Rating</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Desc</span>
+</span><span class='line'>                <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">)))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Name</span><span class="p">)))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Refactoring tip</h2>
+
+<p>Working with subqueries in QueryOver can quickly become overwhelming, especially if you&rsquo;re building a complex query.</p>
+
+<p>One great way to easily make things a bit more readable is to simply store subquery definitions in variables. Keeping with the same example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Store the reviews subquery in a variable</span>
+</span><span class='line'><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">ProductReview</span><span class="p">&gt;</span> <span class="n">reviewSubquery</span> <span class="p">=</span>
+</span><span class='line'>    <span class="n">QueryOver</span><span class="p">.</span><span class="n">Of</span><span class="p">&lt;</span><span class="n">ProductReview</span><span class="p">&gt;()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Product</span><span class="p">.</span><span class="n">Id</span> <span class="p">==</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Rating</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Rating</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Desc</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// use that variable in the main query</span>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">ProjectionList</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">SubQuery</span><span class="p">(</span><span class="n">reviewSubquery</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Id</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">.</span><span class="n">Name</span><span class="p">)))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="kt">object</span><span class="p">[]&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&rsquo;s an easy improvement to make, especially when you&rsquo;re dealing with larger queries.</p>
+
+<h2>Summary</h2>
+
+<p>Working with subqueries can quickly become overwhelming with QueryOver. Hopefully this post will help you write and maintain more advanced QueryOver queries involving subqueries. To summarize:</p>
+
+<ul>
+<li>With QueryOver you can use subqueries in the <code>SELECT</code> clause or the <code>WHERE</code> clause. Unfortunately you cannot query from a derived table in the <code>FROM</code> clause</li>
+<li>In the <code>WHERE</code> clause, you can use <code>.WithSubquery</code>, followed by a <code>.Where</code> variety to control how the results of the subquery are treated</li>
+<li>You can also use the <code>Restrictions</code> class along with <code>Projections.Subquery</code></li>
+<li>In the <code>SELECT</code> clause, you can use <code>.SelectSubQuery</code> with <code>.SelectList</code>.</li>
+<li>You can also use <code>Projections.Subquery</code> to  generate a subquery in the <code>SELECT</code> clause.</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Getting NHibernate Up and Running Quickly]]></title>
