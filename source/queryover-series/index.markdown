@@ -15,3 +15,4 @@ This is the index page for the blog post series on NHibernate's QueryOver API:
 5. [Materializing Results](../blog/2014/06/28/queryover-series-part-5-materializing-results/)
 6. [Query Building Techniques](../blog/2014/08/07/queryover-series-part-6-query-building-techniques/)
 7. [Using SQL Functions](../blog/2014/08/15/queryover-series-part-7-using-sql-functions)
+8. [Working with Subqueries](../blog/2014/10/24/queryover-series-part-8-working-with-subqueries/)
