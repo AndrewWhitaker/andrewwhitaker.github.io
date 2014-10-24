@@ -4,7 +4,7 @@
   <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-08-28T12:28:14-05:00</updated>
+  <updated>2014-10-24T11:08:02-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[Getting NHibernate Up and Running Quickly]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/"/>
-    <updated>2014-08-28T10:44:06-05:00</updated>
+    <updated>2014-08-28T11:44:06-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly</id>
     <content type="html"><![CDATA[<p>NHibernate can seem like a daunting library to set up. The configuration can get quite complicated&mdash;XML mappings, code mappings, mapping conventions, dialects, logging, etc. Sometimes you just want to get something up and running to test out a query or play around with a database other than your primary one. In this post, I&rsquo;ll show you how to get up and running with NHibernate in about 5 minutes and in around 50 lines of code in <a href="http://www.linqpad.net">LINQPad</a>.</p>
 
@@ -254,7 +254,7 @@ public virtual DateTime BirthDate { get; set; }
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 7: Using SQL Functions]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions/"/>
-    <updated>2014-08-15T14:46:35-05:00</updated>
+    <updated>2014-08-15T15:46:35-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;ll go over how to use functions built into the database engine. This can be useful when you want to do some work inside of your SQL query rather than do post-processing on the result set you get back.</p>
 
@@ -728,7 +728,7 @@ private static ISQLFunction GetDateDiffFunction(string datepart)
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 6: Query Building Techniques]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques/"/>
-    <updated>2014-08-07T16:05:37-05:00</updated>
+    <updated>2014-08-07T17:05:37-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;m going to explain some more advanced techniques for building queries with QueryOver. Practically, this means adding joins and where clauses dynamically. This is actually one of the most powerful abilities of QueryOver so it&rsquo;s worth understanding.</p>
 
@@ -1182,7 +1182,7 @@ ProductReview reviewAlias = null;</p>
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 5: Materializing Results]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/"/>
-    <updated>2014-06-28T09:47:22-05:00</updated>
+    <updated>2014-06-28T10:47:22-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results</id>
     <content type="html"><![CDATA[<p>So far I&rsquo;ve been using the <code>.List</code> or <code>.SingleOrDefault</code> methods to actually get results from a query. In this post I&rsquo;ll go into a little more detail about those methods. I&rsquo;ll also cover other ways you can materialize a query&rsquo;s results.</p>
 
@@ -1415,7 +1415,7 @@ SELECT</p>
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 4: Transforming]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming/"/>
-    <updated>2014-06-19T17:51:00-05:00</updated>
+    <updated>2014-06-19T18:51:00-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming</id>
     <content type="html"><![CDATA[<p>You might have noticed that the last post in the series always projects each result row into an <code>object[]</code>. This might have made you wonder if there&rsquo;s a better way to get results from a QueryOver query. Well there is! It&rsquo;s called transforming.</p>
 

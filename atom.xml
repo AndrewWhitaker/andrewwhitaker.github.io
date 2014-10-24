@@ -4,7 +4,7 @@
   <title><![CDATA[Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-08-28T12:28:14-05:00</updated>
+  <updated>2014-10-24T11:08:02-04:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[Getting NHibernate Up and Running Quickly]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/"/>
-    <updated>2014-08-28T10:44:06-05:00</updated>
+    <updated>2014-08-28T11:44:06-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly</id>
     <content type="html"><![CDATA[<p>NHibernate can seem like a daunting library to set up. The configuration can get quite complicated&mdash;XML mappings, code mappings, mapping conventions, dialects, logging, etc. Sometimes you just want to get something up and running to test out a query or play around with a database other than your primary one. In this post, I&rsquo;ll show you how to get up and running with NHibernate in about 5 minutes and in around 50 lines of code in <a href="http://www.linqpad.net">LINQPad</a>.</p>
 
@@ -366,7 +366,7 @@
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 7: Using SQL Functions]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions/"/>
-    <updated>2014-08-15T14:46:35-05:00</updated>
+    <updated>2014-08-15T15:46:35-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;ll go over how to use functions built into the database engine. This can be useful when you want to do some work inside of your SQL query rather than do post-processing on the result set you get back.</p>
 
@@ -958,7 +958,7 @@
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 6: Query Building Techniques]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques/"/>
-    <updated>2014-08-07T16:05:37-05:00</updated>
+    <updated>2014-08-07T17:05:37-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;m going to explain some more advanced techniques for building queries with QueryOver. Practically, this means adding joins and where clauses dynamically. This is actually one of the most powerful abilities of QueryOver so it&rsquo;s worth understanding.</p>
 
@@ -1535,7 +1535,7 @@
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 5: Materializing Results]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/"/>
-    <updated>2014-06-28T09:47:22-05:00</updated>
+    <updated>2014-06-28T10:47:22-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results</id>
     <content type="html"><![CDATA[<p>So far I&rsquo;ve been using the <code>.List</code> or <code>.SingleOrDefault</code> methods to actually get results from a query. In this post I&rsquo;ll go into a little more detail about those methods. I&rsquo;ll also cover other ways you can materialize a query&rsquo;s results.</p>
 
@@ -1791,7 +1791,7 @@
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 4: Transforming]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming/"/>
-    <updated>2014-06-19T17:51:00-05:00</updated>
+    <updated>2014-06-19T18:51:00-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming</id>
     <content type="html"><![CDATA[<p>You might have noticed that the last post in the series always projects each result row into an <code>object[]</code>. This might have made you wonder if there&rsquo;s a better way to get results from a QueryOver query. Well there is! It&rsquo;s called transforming.</p>
 
@@ -2384,7 +2384,7 @@
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 3: Selecting]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/"/>
-    <updated>2014-03-22T10:01:46-05:00</updated>
+    <updated>2014-03-22T11:01:46-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming</id>
     <content type="html"><![CDATA[<p>In this post I&rsquo;ll go over building the <code>SELECT</code> statement with NHibernate QueryOver. I&rsquo;ll also cover the different ways you can actually get a result back from your query.</p>
 
@@ -2867,7 +2867,7 @@
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 2: Basics and Joining]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/03/16/queryover-series-part-2-basics/"/>
-    <updated>2014-03-16T11:05:33-05:00</updated>
+    <updated>2014-03-16T12:05:33-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/03/16/queryover-series-part-2-basics</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;ll outline some basics on QueryOver, including the NHibernate types involved and basic query structure. I&rsquo;ll also talk about joining using <code>JoinAlias</code> and <code>JoinQueryOver</code></p>
 
@@ -2975,7 +2975,7 @@
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 1: Why QueryOver?]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover/"/>
-    <updated>2014-03-12T21:50:58-05:00</updated>
+    <updated>2014-03-12T22:50:58-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover</id>
     <content type="html"><![CDATA[<p>QueryOver is a strongly-typed querying technology built on top of NHibernate&rsquo;s Criteria API. It was introduced in NHibernate 3.0. QueryOver is actually quite powerful and flexible, as I aim to demonstrate in this series of blog posts.</p>
 
@@ -3012,7 +3012,7 @@
   <entry>
     <title type="html"><![CDATA[jQueryUI Autocomplete 1.9]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/"/>
-    <updated>2012-10-08T20:37:33-05:00</updated>
+    <updated>2012-10-08T21:37:33-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9</id>
     <content type="html"><![CDATA[<p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
 
@@ -3214,7 +3214,7 @@
   <entry>
     <title type="html"><![CDATA[jQueryUI Autocomplete: Top 5 sources of confusion]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/"/>
-    <updated>2012-09-29T13:31:58-05:00</updated>
+    <updated>2012-09-29T14:31:58-04:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
 
@@ -3497,7 +3497,7 @@
   <entry>
     <title type="html"><![CDATA[jQuery.aggregate: A simple jQuery aggregation plugin]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/"/>
-    <updated>2011-12-22T17:39:02-06:00</updated>
+    <updated>2011-12-22T18:39:02-05:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
 
@@ -3659,7 +3659,7 @@
   <entry>
     <title type="html"><![CDATA[Retrospective: 1 year of StackOverflow]]></title>
     <link href="http://blog.andrewawhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow/"/>
-    <updated>2011-11-12T22:16:46-06:00</updated>
+    <updated>2011-11-12T23:16:46-05:00</updated>
     <id>http://blog.andrewawhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow</id>
     <content type="html"><![CDATA[<p>About one year ago this month I joined <a href="http://www.stackoverflow.com">StackOverflow</a> and started participating. I wanted to take a few minutes to reflect on my experience the site. First off, why did I start answering questions?</p>
 
