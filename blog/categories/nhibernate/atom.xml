@@ -4,7 +4,7 @@
   <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-08-28T12:28:14-05:00</updated>
+  <updated>2014-10-26T17:33:58-05:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,684 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Named Queries and Unmapped Types]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types/"/>
+    <updated>2014-10-26T16:38:35-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types</id>
+    <content type="html"><![CDATA[<p><em>This post was inspired by <a href="http://stackoverflow.com/q/26512930/497356">this StackOverflow question</a></em>.</p>
+
+<p>Named queries are extremely useful in a variety of situations when you&rsquo;re using NHibernate. If you want to use dialect-specific features that aren&rsquo;t supported in NHibernate, you&rsquo;re practically forced to go this route.</p>
+
+<p>Another (possibly less common scenario) is this: you&rsquo;re working with a database and want to use a stored procedure. For some reason you cannot change the stored procedure.</p>
+
+<!-- more -->
+
+
+<p>On the surface, this doesn&rsquo;t sound problematic: Just map the stored procedure to a named query and execute it. What if the stored procedure returns a resultset whose column names are less than ideal?</p>
+
+<p>To make this problem a bit more concrete, here&rsquo;s a simple stored procedure written against the AdventureWorks database that I&rsquo;ll work with for the rest of the post:</p>
+
+<p>```sql
+create procedure [Products_GetAll]
+as begin</p>
+
+<pre><code>select
+    [Production].[Product].[ProductID] as [prod_id],
+    [Production].[Product].[Name] as [prod_name],
+    [Production].[Product].[Color] as [prod_col]
+from
+    [Production].[Product];
+</code></pre>
+
+<p>end
+```</p>
+
+<p>Our result type, <code>ProductDTO</code> has property names we&rsquo;d expect:</p>
+
+<p>```csharp
+public class ProductDTO
+{</p>
+
+<pre><code>public int Id { get; set; }
+
+public string Name { get; set; }
+
+public string Color { get; set; }
+</code></pre>
+
+<p>}
+```</p>
+
+<p>With these pieces in mind, lets go over some possible solutions to our problem. I&rsquo;m assuming here that you don&rsquo;t want to just rename the properties on <code>ProductDTO</code>. You could certainly do that&mdash;however you&rsquo;d end up with some ugly property names, which is what we&rsquo;re trying to avoid.</p>
+
+<p>So basically the rules are:</p>
+
+<ul>
+<li>We can&rsquo;t change the stored procedure</li>
+<li>We want sane names for the properties in <code>ProductDTO</code></li>
+</ul>
+
+
+<h2>Map <code>ProductDTO</code></h2>
+
+<p>Named queries can have a <code>&lt;return&gt;</code> element with a <code>class</code> attribute. If we went this route, our <code>.hbm.xml</code> file containing the named query might look like this:</p>
+
+<p>```xml
+&lt;hibernate-mapping xmlns=&ldquo;urn:nhibernate-mapping-2.2&rdquo;>
+  &lt;sql-query name=&ldquo;Products_GetAll&rdquo;></p>
+
+<pre><code>&lt;return class="AdventureWorks.ProductDTO"&gt;
+  &lt;return-property name="ProductId" column="prod_id" /&gt;
+  &lt;return-property name="ProductName" column="prod_name" /&gt;
+  &lt;return-property name="ProductColor" column="prod_color" /&gt;
+&lt;/return&gt;
+exec [Products_GetAll];
+</code></pre>
+
+<p>  &lt;/sql-query>
+&lt;/hibernate-mapping>
+```</p>
+
+<p>This looks like it would work right? The problem is that if you go this route, <code>ProductDTO</code> must be mapped. If you try using this mapping with an unmapped class, NHibernate will throw an exception stating that it doesn&rsquo;t know what <code>ProductDTO</code> is.</p>
+
+<p>This might actually make sense depending on your architecture, but if the stored procedure we&rsquo;re executing is purpose-built for a particular area of our application, it probably doesn&rsquo;t make sense to do that. I&rsquo;m thinking specifically of a domain-driven architecture where domain entities are mapped to tables in a database. If that&rsquo;s the architecture we&rsquo;re using then adding a <code>GetAllProducts</code> entity doesn&rsquo;t really make sense.</p>
+
+<p>Furthermore, this stored procedure is simply a <em>query</em>. It doesn&rsquo;t really make sense to map something that&rsquo;s just used to query the same way we&rsquo;d map a table to a class that can be inserted/updated.</p>
+
+<p>There&rsquo;s also the limitation that the poster of the StackOverflow question above had&mdash;his or her query returned a resultset that did not have a column/columns that could be used as an identifier. NHibernate requires that mapped classes have a column or combination of columns that can uniquely identify the row.</p>
+
+<h2>Use LINQ to transform the result of executing the named query</h2>
+
+<p>This solution involves using <code>&lt;return-scalar&gt;</code> in our named query. In other words, an <code>.hbm.xml</code> file that looks like this:</p>
+
+<p>```xml
+&lt;hibernate-mapping xmlns=&ldquo;urn:nhibernate-mapping-2.2&rdquo;>
+  &lt;sql-query name=&ldquo;Products_GetAll&rdquo;></p>
+
+<pre><code>&lt;return-scalar column="prod_id" type="integer"/&gt;
+&lt;return-scalar column="prod_name" type="string"/&gt;
+&lt;return-scalar column="prod_col" type="string"/&gt;
+
+exec [Products_GetAll];
+</code></pre>
+
+<p>  &lt;/sql-query>
+&lt;/hibernate-mapping>
+```</p>
+
+<p>And our C# to get the <code>Product</code>s list would look like this:</p>
+
+<p>```csharp
+var products = session.GetNamedQuery(&ldquo;Products_GetAll&rdquo;)</p>
+
+<pre><code>.List&lt;object[]&gt;()
+.Select(obj =&gt; new ProductDTO
+{
+    Id = (int)obj[0],
+    Name = (string)obj[1],
+    Color = (string)obj[2]
+})
+.ToList();
+</code></pre>
+
+<p>```</p>
+
+<p>This will work fine. The problem is that it can become very unmanageable with more than 10 properties. NHibernate is supposed to get rid of code like this anyway. It feels like there should be a better solution.</p>
+
+<h2>Use a Custom ResultTransformer</h2>
+
+<p>The reason we can&rsquo;t use a built-in result transformer (i.e. one in the <code>NHibernate.Transform</code> namespace) is because the one that would be most useful, <code>AliasToBeanTransformer</code>, requires that we map aliases from the query to properties on the class we want to project into.</p>
+
+<p>Unfortunately NHibernate doesn&rsquo;t allow us to do this mapping with a named query. We can, however, create a new result transformer that allows us to do that. We&rsquo;re using the same XML mapping for our named query as before:</p>
+
+<p>```xml
+&lt;hibernate-mapping xmlns=&ldquo;urn:nhibernate-mapping-2.2&rdquo;>
+  &lt;sql-query name=&ldquo;Products_GetAll&rdquo;></p>
+
+<pre><code>&lt;return-scalar column="prod_id" type="integer"/&gt;
+&lt;return-scalar column="prod_name" type="string"/&gt;
+&lt;return-scalar column="prod_col" type="string"/&gt;
+
+exec [Products_GetAll];
+</code></pre>
+
+<p>  &lt;/sql-query>
+&lt;/hibernate-mapping>
+```</p>
+
+<p>Here are the steps you would take to map <code>ProductDTO</code> to the results of the query.</p>
+
+<p><strong>1. Create an attribute that allows us to map column names to properties:</strong>
+```csharp
+using System;</p>
+
+<p>[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+public class NHibernateQueryColumnAttribute : Attribute
+{</p>
+
+<pre><code>public NHibernateQueryColumnAttribute(string columnName)
+{
+    this.ColumnName = columnName;
+}
+
+public string ColumnName { get; private set; }
+</code></pre>
+
+<p>}
+```</p>
+
+<p><strong>2. Apply the attribute to our result class:</strong>
+```csharp
+public class ProductDTO
+{</p>
+
+<pre><code>[NHibernateQueryColumn("prod_id")]
+public int Id { get; set; }
+
+[NHibernateQueryColumn("prod_name")]
+public string Name { get; set; }
+
+[NHibernateQueryColumn("prod_col")]
+public string Color { get; set; }
+</code></pre>
+
+<p>}
+```</p>
+
+<p><strong>3. Create a result transformer that can leverage that attribute:</strong>
+```csharp
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using NHibernate;
+using NHibernate.Transform;</p>
+
+<p>public class QueryColumnAttributeTransformer<TResultType> : AliasedTupleSubsetResultTransformer
+{</p>
+
+<pre><code>private readonly ConstructorInfo constructor;
+private readonly Dictionary&lt;string, MemberInfo&gt; memberColumnMap;
+private readonly Type resultType = typeof(TResultType);
+
+public QueryColumnAttributeTransformer()
+{
+    this.constructor = this.resultType.GetConstructor(
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+        null,
+        Type.EmptyTypes,
+        null);
+
+    if (this.constructor == null &amp;&amp; this.resultType.IsClass)
+    {
+        throw new ArgumentException(
+            "The target class of a QueryColumnAttributeTransformer needs a parameterless constructor");
+    }
+
+    const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
+
+    this.memberColumnMap = new Dictionary&lt;string, MemberInfo&gt;();
+
+    MemberInfo[] members =
+        this.resultType.GetProperties(flags)
+            .Cast&lt;MemberInfo&gt;()
+            .Concat(this.resultType.GetFields(flags))
+            .ToArray();
+
+    foreach (MemberInfo member in members)
+    {
+        var attr = member.GetCustomAttribute&lt;NHibernateQueryColumnAttribute&gt;();
+
+        this.memberColumnMap.Add(attr == null ? member.Name : attr.ColumnName, member);
+    }
+}
+
+public override bool IsTransformedValueATupleElement(string[] aliases, int tupleLength)
+{
+    return false;
+}
+
+public override object TransformTuple(object[] tuple, string[] aliases)
+{
+    if (aliases == null)
+    {
+        throw new ArgumentNullException("aliases");
+    }
+
+    object result;
+
+    try
+    {
+        result = this.resultType.IsClass
+            ? this.constructor.Invoke(null)
+            : NHibernate.Cfg.Environment.BytecodeProvider.ObjectsFactory.CreateInstance(this.resultType, true);
+
+        for (int i = 0; i &lt; aliases.Length; i++)
+        {
+            string alias = aliases[i];
+
+            MemberInfo member;
+
+            if (this.memberColumnMap.TryGetValue(alias, out member))
+            {
+                if (member.MemberType == MemberTypes.Property)
+                {
+                    ((PropertyInfo)member).SetValue(result, tuple[i]);
+                }
+                else if (member.MemberType == MemberTypes.Field)
+                {
+                    ((FieldInfo)member).SetValue(result, tuple[i]);
+                }
+            }
+            else
+            {
+                throw new ArgumentException(
+                    string.Format(
+                        "{0} has no field or property mapped to column '{1}'", this.resultType, alias));
+            }
+        }
+    }
+    catch (MemberAccessException e)
+    {
+        throw new HibernateException("Could not instantiate result class: " + this.resultType, e);
+    }
+
+    return result;
+}
+
+public override IList TransformList(IList collection)
+{
+    return collection;
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p><strong>4. Use the result transformer in the query:</strong>
+```csharp
+var products = session.GetNamedQuery(&ldquo;Products_GetAll&rdquo;)</p>
+
+<pre><code>.SetResultTransformer(new QueryColumnAttributeTransformer&lt;ProductDTO&gt;())
+.List&lt;ProductDTO&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>If you don&rsquo;t like the idea of modifying your result class to accommodate the query, you could make a few changes to the transformer that would allow it to use a <code>Dictionary</code> mapping that you pass in instead.</p>
+
+<p>Hope that helps someone out there. And if there&rsquo;s an easier way to accomplish this, please let me know.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series Part 8: Working with Subqueries]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries/"/>
+    <updated>2014-10-24T11:17:39-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries</id>
+    <content type="html"><![CDATA[<p>Subqueries are often extremely useful when building queries. Unfortunately there&rsquo;s not much out there on how to work with subqueries in QueryOver. In this post, I&rsquo;ll dive into how to create the subqueries using QueryOver&rsquo;s various subquery APIs.</p>
+
+<!-- more -->
+
+
+<p>There are two places you can use subqueries in a QueryOver query: the <code>SELECT</code> clause and the <code>WHERE</code> clause. Unfortunately you cannot use a subquery in the <code>FROM</code> clause of a QueryOver query.</p>
+
+<h2>Subqueries in the <code>WHERE</code> clause</h2>
+
+<p>As usual, there are several ways to generate identical SQL using QueryOver. I&rsquo;ll go over each one in detail.</p>
+
+<h3><code>.WithSubquery</code></h3>
+
+<p><code>.WithSubquery</code> is the most straightforward and natural way to create a subquery with QueryOver. Basically, using <code>.WithSubquery</code> allows you to use some property on <code>TSubType</code> (or a property belonging to an alias) with a subquery expression. After calling <code>.WithSubquery</code>, there are several methods that become available:</p>
+
+<ul>
+<li><code>.Where</code></li>
+<li><code>.WhereAll</code></li>
+<li><code>.WhereSome</code></li>
+<li><code>.WhereExists</code></li>
+<li><code>.WhereNotExists</code></li>
+<li><code>.WhereProperty</code></li>
+</ul>
+
+
+<p>For the most part these are pretty straightforward, but I&rsquo;ll go over each one.</p>
+
+<h4><code>.Where</code></h4>
+
+<p>You should use <code>.WithSubquery.Where</code> when your subquery returns a scalar value and you want to compare that value (using <code>=</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&gt;=</code>, or <code>&lt;=</code>) with a value from your outer query.</p>
+
+<p>For example, here&rsquo;s a query that finds the <code>Product</code> with the <code>Transaction</code> containing the highest quantity (one <code>Product</code> has many <code>Transactions</code>):</p>
+
+<p><strong>QueryOver</strong>:
+```csharp
+var popularProduct = session.QueryOver<Product>()</p>
+
+<pre><code>.WithSubquery.Where(pr =&gt; pr.Id ==
+    QueryOver.Of&lt;TransactionHistory&gt;()
+        .Select(tx =&gt; tx.Product.Id)
+        .OrderBy(tx =&gt; tx.Quantity)
+        .Desc
+        .Take(1)
+        .As&lt;int&gt;())
+.SingleOrDefault&lt;Product&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p><strong>SQL</strong>:
+```sql
+SELECT</p>
+
+<pre><code>*
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>WHERE</p>
+
+<pre><code>this_.ProductID = (
+    SELECT
+        TOP (1)  this_0_.ProductID as y0_
+    FROM
+        Production.TransactionHistory this_0_
+    ORDER BY
+        this_0_.Quantity desc
+);
+</code></pre>
+
+<p>```</p>
+
+<p>The interesting thing to note about the subquery is the <code>.As&lt;T&gt;</code> method at the end. This allows us to compare the <code>Id</code> property from the outer query with the inner query&rsquo;s <code>Product.Id</code> property. This method&rsquo;s sole purpose is to be used inside of a subquery like this so that we can treat the entire QueryOver query as a scalar value for comparison purposes.</p>
+
+<h4><code>.WhereAll</code> and <code>.WhereSome</code></h4>
+
+<p><code>.WithSubquery.WhereAll</code> and <code>.WithSubquery.WhereSome</code> generate SQL that looks similar to the SQL generated by <code>Where</code>, but it uses the <code>all</code> or <code>some</code> operator to modify the comparison. The subquery should return a resultset of one column. Each row in that result is compared with the scalar value from the outer query.</p>
+
+<p>For example, here&rsquo;s a query that finds all <code>Product</code>s who&rsquo;s <code>ListPrice</code> is greater than <em>all</em> of the related <code>ProductCostHistory</code> entries' <code>StandardCost</code>. <code>ProductCostHistory</code> tracks product cost over time:</p>
+
+<p><strong>QueryOver</strong>
+```csharp
+Product productAlias = null;
+var products = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.WithSubquery.WhereAll(p =&gt; p.ListPrice &gt;
+    QueryOver.Of&lt;ProductCostHistory&gt;()
+        .Where(ch =&gt; ch.Product.Id == productAlias.Id)
+        .Select(ch =&gt; ch.StandardCost)
+        .As&lt;decimal&gt;())
+.List&lt;Product&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p><strong>SQL</strong>
+```sql
+SELECT</p>
+
+<pre><code>*
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>WHERE</p>
+
+<pre><code>this_.ListPrice &gt; all (
+    SELECT
+        this_0_.StandardCost as y0_
+    FROM
+        Production.ProductCostHistory this_0_
+    WHERE
+        this_0_.ProductID = this_.ProductID
+)
+</code></pre>
+
+<p>```</p>
+
+<p>If you look carefully at the QueryOver, you&rsquo;ll notice that I assigned an alias to the outer <code>Product</code>. This is so that I could correlate the outer query and the inner query.</p>
+
+<p>Using <code>.WhereSome</code> instead would generate SQL using the <code>some</code> operator. This operator returns <code>true</code> if <em>at least one</em> of the values in the resultset from the subquery returns true.</p>
+
+<h4><code>.WhereExists</code> and <code>.WhereNotExists</code></h4>
+
+<p>These two are straightforward. These will generate the SQL you&rsquo;d expect with <code>exists</code> or <code>not exists</code>, respectively. If you&rsquo;re familiar with SQL, you&rsquo;ve probably used these a fair amount. Use <code>.WhereExists</code> to return rows where there&rsquo;s at least one result in the subquery, and use <code>.WhereNotExists</code> to return rows where the subquery returns no results.</p>
+
+<p>Here&rsquo;s an example that returns all products with no transaction history:</p>
+
+<p><strong>QueryOver</strong>
+```csharp
+Product productAlias = null;</p>
+
+<p>var productsWithNoTransactions = session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.WithSubquery.WhereNotExists(
+    QueryOver.Of&lt;TransactionHistory&gt;()
+        .Where(tx =&gt; tx.Product.Id == productAlias.Id)
+        .Select(tx =&gt; tx.Id))
+.List&lt;Product&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p><strong>SQL</strong>
+```sql
+SELECT</p>
+
+<pre><code>*
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_
+</code></pre>
+
+<p>WHERE</p>
+
+<pre><code>not exists (
+    SELECT
+        this_0_.TransactionID as y0_
+    FROM
+        Production.TransactionHistory this_0_
+    WHERE
+        this_0_.ProductID = this_.ProductID
+)
+</code></pre>
+
+<p>```</p>
+
+<p>Using <code>.WithSubquery</code> is the most straightforward way to work with subqueries in the <code>WHERE</code> clause of a query.</p>
+
+<h3>With the <code>Restrictions</code> class</h3>
+
+<p>You can use the <code>Restrictions</code> class to generate SQL within a QueryOver query as well. I won&rsquo;t show everything you can do with the <code>Restrictions</code> class&mdash; it should be pretty straightforward after showing a few examples.</p>
+
+<p>Here&rsquo;s the first example from the previous section:</p>
+
+<p>```csharp
+session.QueryOver<Product>()</p>
+
+<pre><code>.Where(
+    Restrictions.EqProperty(
+        Projections.Property&lt;Product&gt;(pr =&gt; pr.Id),
+        Projections.SubQuery(
+            QueryOver.Of&lt;TransactionHistory&gt;()
+                .Select(tx =&gt; tx.Product.Id)
+                .OrderBy(tx =&gt; tx.Quantity)
+                .Desc
+                .Take(1))))
+.SingleOrDefault&lt;Product&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>I&rsquo;m not sure about you, but to me this is much harder to read and looks much more complex than the example in the previous section.</p>
+
+<p>Usually this syntax is not necessary, but you may find it useful if you&rsquo;re building queries dynamically.</p>
+
+<p>One way to build a list of conditions joined by <code>AND</code> operators is to use <code>Restrictions.Conjunction()</code>. You can call <code>.Add</code> on the <code>Conjunction</code> instance you get back, building a conjunction based on various conditions.</p>
+
+<p>Here&rsquo;s an example:</p>
+
+<p>```csharp
+Conjunction conjunction = Restrictions.Conjunction();</p>
+
+<p>if (onlyBiggestTransaction)
+{</p>
+
+<pre><code>conjunction.Add(
+    Restrictions.EqProperty(
+        Projections.Property&lt;Product&gt;(pr =&gt; pr.Id),
+        Projections.SubQuery(
+            QueryOver.Of&lt;TransactionHistory&gt;()
+                .Select(tx =&gt; tx.Product.Id)
+                .OrderBy(tx =&gt; tx.Quantity)
+                .Desc
+                .Take(1))));
+</code></pre>
+
+<p>}</p>
+
+<p>session.QueryOver<Product>()</p>
+
+<pre><code>.Where(conjunction)
+.List&lt;Product&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>If you have lots of conditions you&rsquo;re evaluating to build a <code>WHERE</code> clause, I would consider going this route. It&rsquo;s easy to read the final query (starting on L16 above), and the various parts of the <code>Conjunction</code> are also nicely separated from the main query.</p>
+
+<h2>Subqueries in the <code>SELECT</code> clause</h2>
+
+<p>There are two ways to use subqueries in the <code>SELECT</code> clause: <code>SelectSubquery</code> and <code>Projections.Subquery</code>.</p>
+
+<h3><code>SelectSubquery</code></h3>
+
+<p>If you&rsquo;re using a select list (built using <code>QueryOver&lt;TRoot, TSubType&gt;.SelectList(...)</code>), the easiest way to create a subquery in the <code>SELECT</code> clause is to use <code>.SelectSubquery</code>. This works exactly how you&rsquo;d expect it to.</p>
+
+<p>This example gets information about a <code>Product</code> and the highest <code>ProductReview.Rating</code> associated with that product:</p>
+
+<p><strong>QueryOver</strong>
+```csharp
+session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.SelectList(list =&gt; list
+    .SelectSubQuery(
+        QueryOver.Of&lt;ProductReview&gt;()
+            .Where(pr =&gt; pr.Product.Id == productAlias.Id)
+            .Select(pr =&gt; pr.Rating)
+            .OrderBy(pr =&gt; pr.Rating).Desc
+            .Take(1))
+    .Select(pr =&gt; pr.Id)
+    .Select(pr =&gt; pr.Name))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Note that I&rsquo;m creating a correlated subquery by assigning <code>productAlias</code> in the outer query and then using it in the subquery.</p>
+
+<p><strong>SQL</strong>
+```sql
+SELECT</p>
+
+<pre><code>(SELECT
+    TOP (1)  this_0_.Rating as y0_
+FROM
+    Production.ProductReview this_0_
+WHERE
+    this_0_.ProductID = this_.ProductID
+ORDER BY
+    this_0_.Rating desc) as y0_,
+this_.ProductID as y1_,
+this_.Name as y2_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Production.Product this_;
+</code></pre>
+
+<p>```</p>
+
+<h3><code>Projections.Subquery</code></h3>
+
+<p><code>Projections.Subquery</code> can come in handy when building the <code>SELECT</code> clause dynamically. This is especially useful when you&rsquo;re building a <code>SELECT</code> clause using <code>Projections.ProjectionList</code>. Here&rsquo;s the same query from the <code>SelectSubquery</code> example above:</p>
+
+<p>```csharp
+session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.Select(Projections.ProjectionList()
+    .Add(Projections.SubQuery(
+        QueryOver.Of&lt;ProductReview&gt;()
+            .Where(pr =&gt; pr.Product.Id == productAlias.Id)
+            .Select(pr =&gt; pr.Rating)
+            .OrderBy(pr =&gt; pr.Rating)
+            .Desc
+            .Take(1)))
+    .Add(Projections.Property(() =&gt; productAlias.Id))
+    .Add(Projections.Property(() =&gt; productAlias.Name)))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<h2>Refactoring tip</h2>
+
+<p>Working with subqueries in QueryOver can quickly become overwhelming, especially if you&rsquo;re building a complex query.</p>
+
+<p>One great way to easily make things a bit more readable is to simply store subquery definitions in variables. Keeping with the same example:</p>
+
+<p>```csharp
+Product productAlias = null;</p>
+
+<p>// Store the reviews subquery in a variable
+QueryOver<ProductReview> reviewSubquery =</p>
+
+<pre><code>QueryOver.Of&lt;ProductReview&gt;()
+    .Where(pr =&gt; pr.Product.Id == productAlias.Id)
+    .Select(pr =&gt; pr.Rating)
+    .OrderBy(pr =&gt; pr.Rating)
+    .Desc
+    .Take(1);
+</code></pre>
+
+<p>// use that variable in the main query
+session.QueryOver<Product>(() => productAlias)</p>
+
+<pre><code>.Select(Projections.ProjectionList()
+    .Add(Projections.SubQuery(reviewSubquery))
+    .Add(Projections.Property(() =&gt; productAlias.Id))
+    .Add(Projections.Property(() =&gt; productAlias.Name)))
+.List&lt;object[]&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>That&rsquo;s an easy improvement to make, especially when you&rsquo;re dealing with larger queries.</p>
+
+<h2>Summary</h2>
+
+<p>Working with subqueries can quickly become overwhelming with QueryOver. Hopefully this post will help you write and maintain more advanced QueryOver queries involving subqueries. To summarize:</p>
+
+<ul>
+<li>With QueryOver you can use subqueries in the <code>SELECT</code> clause or the <code>WHERE</code> clause. Unfortunately you cannot query from a derived table in the <code>FROM</code> clause</li>
+<li>In the <code>WHERE</code> clause, you can use <code>.WithSubquery</code>, followed by a <code>.Where</code> variety to control how the results of the subquery are treated</li>
+<li>You can also use the <code>Restrictions</code> class along with <code>Projections.Subquery</code></li>
+<li>In the <code>SELECT</code> clause, you can use <code>.SelectSubQuery</code> with <code>.SelectList</code>.</li>
+<li>You can also use <code>Projections.Subquery</code> to  generate a subquery in the <code>SELECT</code> clause.</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Getting NHibernate Up and Running Quickly]]></title>
@@ -1174,690 +1852,6 @@ ProductReview reviewAlias = null;</p>
 <li>Refactoring conditional restrictions and joins into extension methods can keep queries readable and refactor logic into reusable pieces.</li>
 <li>To make those extension methods as robust as possible, we can make the methods generic and therefore more flexible.</li>
 <li>Passing around aliases between methods when building QueryOver queries has some pitfalls and needs some special attention.</li>
-</ul>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[QueryOver Series - Part 5: Materializing Results]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/"/>
-    <updated>2014-06-28T09:47:22-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results</id>
-    <content type="html"><![CDATA[<p>So far I&rsquo;ve been using the <code>.List</code> or <code>.SingleOrDefault</code> methods to actually get results from a query. In this post I&rsquo;ll go into a little more detail about those methods. I&rsquo;ll also cover other ways you can materialize a query&rsquo;s results.</p>
-
-<!-- more -->
-
-
-<h3><code>SingleOrDefault&lt;T&gt;</code> and <code>List&lt;T&gt;</code></h3>
-
-<p>These two are pretty self-explanatory. Calling <code>.List&lt;T&gt;</code> at the end of your query will immediately yield an <code>IList&lt;T&gt;</code>. For example:</p>
-
-<p>```csharp
-IList<Employee> empl = session.QueryOver<Employee>()</p>
-
-<pre><code>.List&lt;Employee&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>Similarly, <code>SingleOrDefault&lt;T&gt;</code> will immediately give you a single item of type <code>T</code>, provided the query only returns one row. Otherwise, NHibernate will throw an exception telling you that the query did not return a unique result.</p>
-
-<h3><code>Future&lt;T&gt;</code> and <code>FutureValue&lt;T&gt;</code></h3>
-
-<p>These two are more interesting. <a href="http://ayende.com/blog/3979/nhibernate-futures">Ayende has discussed these in detail</a> with the Criteria API, but I don&rsquo;t think a blog series on QueryOver is really complete without mentioning them again. In NHibernate using these creates a &ldquo;MultiQuery&rdquo; or &ldquo;MultiCriteria&rdquo;, which just means that NHibernate is batching your queries into one round trip and deferring populating the results.</p>
-
-<h4><code>Future&lt;T&gt;</code></h4>
-
-<p>Calling <code>.Future&lt;T&gt;</code> on your query will return an <code>IEnumerable&lt;T&gt;</code> that will not be populated with results until one of the results or resultsets is needed. NHibernate will build up queries using <code>.Future&lt;T&gt;</code> or <code>.FutureValue&lt;T&gt;</code> until one of the &ldquo;future&rdquo; results are accessed.</p>
-
-<p>When the results are processed, NHibernate will send one request to the database containing the SQL for all of the &ldquo;future&rdquo; queries and populate the results accordingly. For example, lets say we were trying to display all <code>Employee</code>s and all <code>Product</code>s on the same page. We could just write two separate queries:</p>
-
-<p>```csharp
-// Get the list of employees first
-IList<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.List&lt;Employee&gt;();
-</code></pre>
-
-<p>// Then the list of products
-IList<Product> products = session.QueryOver<Product>()</p>
-
-<pre><code>.List&lt;Product&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>Which yields the following SQL:</p>
-
-<p>```sql</p>
-
-<pre><code>SELECT
-    this_.BusinessEntityID as Business1_0_1_,
-    -- More employee fields
-FROM
-    HumanResources.Employee this_
-</code></pre>
-
-<p><code>
-... And then a second query for the `Product`s:
-</code>sql</p>
-
-<pre><code>SELECT
-    this_.ProductID as ProductID7_0_
-    -- More product fields
-FROM
-    Production.Product this_
-</code></pre>
-
-<p><code>``
-This would work fine, but NHibernate is sending two separate queries to the database when we can accomplish getting those results with only one using</code>.Future<T>`:</p>
-
-<p>```csharp
-// Batch the two queries together
-IEnumerable<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.Future&lt;Employee&gt;();
-</code></pre>
-
-<p>IEnumerable<Product> products = session.QueryOver<Product>()</p>
-
-<pre><code>.Future&lt;Product&gt;();
-</code></pre>
-
-<p>// A single round trip to the database is made here containing both queries
-int numProducts = products.Count();
-```</p>
-
-<p>This generates a single database round trip with both queries when the <code>products.Count()</code> call forces NHibernate to process the <code>Product</code>s query:</p>
-
-<p>```sql
-&mdash; First query:
-SELECT</p>
-
-<pre><code>this_.BusinessEntityID as Business1_0_1_,
--- More Employee columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>HumanResources.Employee this_;
-</code></pre>
-
-<p>&mdash; Second query:
-SELECT</p>
-
-<pre><code>this_.ProductID as ProductID7_0_,
--- More product columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>Production.Product this_;
-</code></pre>
-
-<p>```</p>
-
-<p>This can be hugely helpful when querying from multiple sources that don&rsquo;t depend on each other.</p>
-
-<h4><code>FutureValue&lt;T&gt;</code></h4>
-
-<p>The same applies for <code>.FutureValue</code>, which is a deferred version of <code>.SingleOrDefault</code>.</p>
-
-<p>Lets say we wanted a list of all employees and the total number of products. Again, we could write two separate queries:</p>
-
-<p>```csharp
-IList<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.List&lt;Employee&gt;();
-</code></pre>
-
-<p>int productsCount = session.QueryOver<Product>()</p>
-
-<pre><code>.SelectList(list =&gt; list
-    .SelectCount(pr =&gt; pr.Id))
-.SingleOrDefault&lt;int&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>As you&rsquo;d expect, this will create two queries and two round-trips to the database:</p>
-
-<p>```sql
-SELECT</p>
-
-<pre><code>this_.BusinessEntityID as Business1_0_1_,
--- More Employee columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>HumanResources.Employee this_
-</code></pre>
-
-<p><code>
-... And then the `Product`s count query:
-</code>sql</p>
-
-<pre><code>SELECT
-    count(this_.ProductID) as y0_
-FROM
-    Production.Product this_
-</code></pre>
-
-<p>```</p>
-
-<p>We can turn this into one query by using <code>Future</code> and <code>FutureValue</code>:</p>
-
-<p>```csharp
-// Batch the two queries together
-IEnumerable<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.Future&lt;Employee&gt;();
-</code></pre>
-
-<p>IFutureValue<int> productsCount = session.QueryOver<Product>()</p>
-
-<pre><code>.SelectList(list =&gt; list
-    .SelectCount(pr =&gt; pr.Id))
-.FutureValue&lt;int&gt;();
-</code></pre>
-
-<p>// Access the &ldquo;Value&rdquo; property of IFutureValue, which will execute both queries in one round-trip
-Console.WriteLine(productsCount.Value);
-```</p>
-
-<p>Like our previous example with <code>.Future</code>, this will generate one round-trip to the database with two queries:</p>
-
-<p>```sql
-&mdash; First query:
-SELECT</p>
-
-<pre><code>this_.BusinessEntityID as Business1_0_1_,
--- More Employee Columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>HumanResources.Employee this_;
-</code></pre>
-
-<p>&mdash; Second query:
-SELECT</p>
-
-<pre><code>count(this_.ProductID) as y0_
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>Production.Product this_;
-</code></pre>
-
-<p>```</p>
-
-<p>Note the return type of the count query. <code>IFutureValue&lt;T&gt;</code> is simply a type that allows NHibernate to give you a deferred <code>SingleOrDefault</code> result. Accessing <code>.Value</code> (just like causing the <code>IEnumerable&lt;T&gt;</code> returned by <code>.Future</code>) will cause the batched queries to execute.</p>
-
-<p>I&rsquo;d highly recommend using <code>.Future</code> and <code>.FutureValue</code> where possible when you need to execute multiple queries at once. You&rsquo;ll save round trips to the database and therefore get results to your users faster.</p>
-
-<h3>Summary</h3>
-
-<p>This post covered different ways to materialize resultsets with NHibernate QueryOver.</p>
-
-<ul>
-<li><code>.SingleOrDefault</code> and <code>.List</code> immediately give you the results</li>
-<li><code>.FutureValue</code> and <code>.Future</code> batch queries and defer execution until one of the results in the batch is needed</li>
-<li><code>.FutureValue</code> and <code>.Future</code> use one round trip to the database instead of several, which is more efficient.</li>
-</ul>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[QueryOver Series - Part 4: Transforming]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming/"/>
-    <updated>2014-06-19T17:51:00-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming</id>
-    <content type="html"><![CDATA[<p>You might have noticed that the last post in the series always projects each result row into an <code>object[]</code>. This might have made you wonder if there&rsquo;s a better way to get results from a QueryOver query. Well there is! It&rsquo;s called transforming.</p>
-
-<p>In the context of an NHibernate query, a <em>transformer</em> is simply a class that transforms each row from a query into an instance of an object. NHibernate comes with several and allows you to easily create a custom transformer if you&rsquo;d like.</p>
-
-<!-- more -->
-
-
-<p>Transformers are supplied to the <code>TransformUsing</code> function on an instance of <code>IQueryOver&lt;TRoot, TSubtype&gt;</code>. For example, here&rsquo;s how you would use <code>Transformers.DistinctRootEntity</code> (which I&rsquo;ll go into more detail later about):</p>
-
-<p>```csharp
-var results =</p>
-
-<pre><code>session.QueryOver&lt;Product&gt;()
-    .TransformUsing(Transformers.DistinctRootEntity)
-    .List&lt;Product&gt;();
-</code></pre>
-
-<p>```</p>
-
-<h3>Using the built-in transformers</h3>
-
-<p>NHibernate supplies several built-in transformers in the <code>NHibernate.Transform</code> namespace. These may be all you need in your application since they cover most use cases. I&rsquo;ll go over each built-in transformer and how to use it.</p>
-
-<h4><code>DistinctRootEntity</code></h4>
-
-<p>This transformer works the way you&rsquo;d think it would: it transforms the query results into a list of <em>distinct</em> entities of the <em>root</em> type. What&rsquo;s the <em>root</em> type? Well if you read <a href="../../../../2014/03/12/queryover-series-part-1-why-queryover/">part 1</a>, you&rsquo;ll remember that a QueryOver query deals with two types, <code>TRoot</code> and <code>TSubType</code>. the root type is simply <code>TRoot</code>.</p>
-
-<p>For example, here&rsquo;s a query that returns a list of all <code>Product</code>s:</p>
-
-<p>```csharp
-// TRoot is Product
-IList<Product> results = session.QueryOver<Product>()</p>
-
-<pre><code>.TransformUsing(Transformers.DistinctRootEntity)
-.List&lt;Product&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>As you can see, using <code>DistinctRootEntity</code> allows us to get a list of entities easily. This example doesn&rsquo;t address the <em>distinct</em> part of <code>DistinctRootEntity</code>. Here&rsquo;s another, more interesting example:</p>
-
-<p>```csharp
-IList<Product> results = session.QueryOver<Product>()</p>
-
-<pre><code>.JoinQueryOver(pr =&gt; pr.TransactionHistory)
-    .Where(th =&gt; th.ActualCost &gt; 2.0M)
-.TransformUsing(Transformers.DistinctRootEntity)
-.List&lt;Product&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>This is more interesting because a <code>Product</code> might have many related rows in <code>TransactionHistory</code>. The join would cause each <code>Product</code> to appear as many times as it has <code>TransactionHistory</code> records, which we probably don&rsquo;t want if we&rsquo;re just trying to find all <code>Product</code>s that were ever priced over $2.00.</p>
-
-<p>Here&rsquo;s the SQL the above query generates:</p>
-
-<p>```sql
-SELECT</p>
-
-<pre><code>this_.ProductID as ProductID7_1_,
--- All product columns
-transactio1_.TransactionID as Transact1_13_0_,
--- All TransactionHistory columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>Production.Product this_
-</code></pre>
-
-<p>inner join</p>
-
-<pre><code>Production.TransactionHistory transactio1_
-    on this_.ProductID=transactio1_.ProductID
-</code></pre>
-
-<p>WHERE</p>
-
-<pre><code>transactio1_.ActualCost &gt; 2;
-</code></pre>
-
-<p>```</p>
-
-<p>The result we  get back is a list of distinct <code>Product</code>s.</p>
-
-<p><code>DistinctRootEntity</code> is most useful if you have a simple query in which you need instances of an entity and may or may not want to do filtering on some related entities.</p>
-
-<h4><code>AliasToEntityMap</code></h4>
-
-<p>This transformer allows you to transform each row of the result set into an <code>IDictionary</code> (hash table). Unfortunately it&rsquo;s not a generic <code>IDictionary</code>. The keys are strings containing the aliases you defined in the query, and the values are entities. This is best explained with an example:</p>
-
-<p>``` csharp
-TransactionHistory historyAlias = null;
-Product productAlias = null;</p>
-
-<p>IList<IDictionary> results = session.QueryOver<Product>(() => productAlias)</p>
-
-<pre><code>.JoinQueryOver(pr =&gt; pr.TransactionHistory, () =&gt; historyAlias)
-    .Where(th =&gt; th.ActualCost &gt; 2.0M)
-.TransformUsing(Transformers.AliasToEntityMap)
-.Take(10)
-.List&lt;IDictionary&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>Each item in <code>results</code> is an <code>IDictionary</code>. This <code>IDictionary</code>&rsquo;s keys are the <em>aliases</em> we assigned while building our query. For example, if you wanted to get the first row&rsquo;s <code>TransactionHistory</code> entity, you would write:</p>
-
-<p><code>csharp
-TransactionHistory history = (TransactionHistory)results[0]["historyAlias"];
-</code></p>
-
-<p>This might seem a bit odd at first, but using <code>AliasToEntityMap</code> can prove useful if you need to retrieve multiple entities in a single query.</p>
-
-<h4><code>PassThrough</code></h4>
-
-<p>This transformer appears to be quite similar to <code>AliasToEntityMap</code> in that it generates a collection of entities for each row in the resultset. I say &ldquo;appears&rdquo; because I haven&rsquo;t had much experience with it and I cannot find much about it online. I&rsquo;ll add to this post if I come across anything interesting.</p>
-
-<p>Anyway for a simple example it seems to place an instance of an entity from the query in a slot in an <code>object</code> array in <em>reverse</em> order from when it was added to the query. For example:</p>
-
-<p>```csharp
-IList&lt;object[]> results = session.QueryOver<Product>()</p>
-
-<pre><code>.JoinAlias(pr =&gt; pr.Reviews, () =&gt; reviewAlias)
-.JoinQueryOver(pr =&gt; pr.TransactionHistory)
-    .Where(th =&gt; th.ActualCost &gt; 2.0M)
-.TransformUsing(Transformers.PassThrough)
-.Take(10)
-.List&lt;object[]&gt;();
-</code></pre>
-
-<p>foreach (object[] result in results)
-{</p>
-
-<pre><code>ProductReview review = (ProductReview)result[0];
-TransactionHistory t = (TransactionHistory)result[1];
-Product p = (Product)result[2];
-</code></pre>
-
-<p>}
-```</p>
-
-<p>As you can see, <code>result[0]</code> is a <code>ProductReview</code>, <code>result[1]</code> is a <code>TransactionHistory</code> and <code>result[2]</code> is the <code>Product</code> itself.</p>
-
-<h4><code>RootEntity</code></h4>
-
-<p><code>RootEntity</code> is similar to <code>DistinctRootEntity</code> in that it projects a list of <code>TRoot</code>. The difference is that the results are <em>not</em> distinct. Therefore if you join on a related table that multiplies the root entity, you&rsquo;ll get back that entity many times for each related row. Here&rsquo;s the example from <code>DistinctRootEntity</code> again, except using <code>RootEntity</code>:</p>
-
-<p>```csharp
-IList<Product> results = session.QueryOver<Product>()</p>
-
-<pre><code>.JoinQueryOver(pr =&gt; pr.TransactionHistory)
-    .Where(th =&gt; th.ActualCost &gt; 2.0M)
-.TransformUsing(Transformers.RootEntity)
-.List&lt;Product&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>This will return any <code>Products</code> with a <code>TransactionHistory</code> that has an <code>ActualCost</code> over $2.00, but will not remove duplicate <code>Product</code> records.</p>
-
-<h4><code>ToList</code></h4>
-
-<p>This transformer works very similarly to not specifying a transformer at all and getting back an <code>IList&lt;object[]&gt;</code>. The difference here is that you&rsquo;ll get back an <code>IList&lt;IList&gt;</code> instead.</p>
-
-<p>For example:</p>
-
-<p>```csharp
-Product productAlias = null;</p>
-
-<p>IList<IList> results = session.QueryOver<Product>(() => productAlias)</p>
-
-<pre><code>.JoinQueryOver(pr =&gt; pr.TransactionHistory)
-    .Where(th =&gt; th.ActualCost &gt; 2.0M)
-.TransformUsing(Transformers.ToList)
-.SelectList(list =&gt; list
-    .Select(() =&gt; productAlias.Id)
-    .Select(() =&gt; productAlias.Name)
-)
-.List&lt;IList&gt;();
-</code></pre>
-
-<p>Console.WriteLine(results[0][0]); // product Id
-Console.WriteLine(results<a href="http://msdn.microsoft.com/en-us/library/system.reflection.constructorinfo(v=vs.110).aspx">0</a>); // product Name
-```</p>
-
-<h4><code>AliasToBean</code></h4>
-
-<p>In my experience, this transformer is by far the most useful. It allows you to transform each row into an instance of a type you specify. You can project columns from different entities into properties on each instance.</p>
-
-<p>Lets use <code>AliasToBean</code> to get a list of <code>HighestProductReviewDTO</code>s. Here&rsquo;s the definition for <code>HighestProductReviewDTO</code>:</p>
-
-<p>```csharp
-public class HighestProductReviewDTO
-{</p>
-
-<pre><code>public int ProductID { get; set; }
-
-public string ProductName { get; set; }
-
-public int Rating { get; set; }
-
-public string Comments { get; set; }
-</code></pre>
-
-<p>}
-```</p>
-
-<p>NHibernate requires that the DTO have a parameterless constructor so that it can create an instance of your class for each row it retrieves.</p>
-
-<p>We&rsquo;re going to get a list of <code>Product</code>s that have reviews, followed by some information from that <code>Product</code>&rsquo;s highest review. Here&rsquo;s what our query looks like:</p>
-
-<p>```csharp
-IList<HighestProductReviewDTO> highestReviews =</p>
-
-<pre><code>session.QueryOver&lt;Product&gt;(() =&gt; productAlias)
-    .JoinQueryOver(pr =&gt; pr.Reviews, () =&gt; productReviewAlias)
-        .WithSubquery.Where(pr =&gt; pr.Id == QueryOver.Of&lt;ProductReview&gt;()
-            .Where(rev =&gt; rev.Product.Id == productAlias.Id)
-            .OrderBy(rev =&gt; rev.Rating).Desc()
-            .Select(rev =&gt; rev.Id)
-            .Take(1)
-            .As&lt;int&gt;())
-    .SelectList(list =&gt; list
-        .Select(() =&gt; productAlias.Id).WithAlias(() =&gt; result.ProductID)
-        .Select(() =&gt; productAlias.Name).WithAlias(() =&gt; result.ProductName)
-        .Select(() =&gt; productReviewAlias.Rating).WithAlias(() =&gt; result.Rating)
-        .Select(() =&gt; productReviewAlias.Comments).WithAlias(() =&gt; result.Comments)
-    )
-    .TransformUsing(Transformers.AliasToBean&lt;HighestProductReviewDTO&gt;())
-    .List&lt;HighestProductReviewDTO&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>Pay particular attention to the <code>.WithAlias</code> calls at the end of the <code>.Select</code> calls inside of <code>SelectList</code>. These are what tell NHibernate to associate particular column values in each row retrieved with the correct property in our DTO class.</p>
-
-<p>In case you&rsquo;re curious, here&rsquo;s the SQL that NHibernate generated:</p>
-
-<p>```sql
-SELECT</p>
-
-<pre><code>this_.ProductID as y0_,
-this_.Name as y1_,
-productrev1_.Rating as y2_,
-productrev1_.Comments as y3_
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>Production.Product this_
-</code></pre>
-
-<p>inner join</p>
-
-<pre><code>Production.ProductReview productrev1_
-    on this_.ProductID=productrev1_.ProductID
-</code></pre>
-
-<p>WHERE</p>
-
-<pre><code>productrev1_.ProductReviewID = (
-    SELECT
-        TOP (1)  this_0_.ProductReviewID as y0_
-    FROM
-        Production.ProductReview this_0_
-    WHERE
-        this_0_.ProductID = this_.ProductID
-    ORDER BY
-        this_0_.Rating desc
-</code></pre>
-
-<p>```</p>
-
-<p><code>AliasToBean</code> is extremely useful. It allows us to specify exactly what columns we need and transform the resulting rows into instances of simple types. However it does have some limitations:</p>
-
-<ul>
-<li>The class you&rsquo;re projecting to must have a parameterless constructor</li>
-<li>You cannot populate collections (e.g., if you had a class with <code>ProductID</code> and a collection of <code>ProductReviews</code> you could not do that in one step using <code>AliasToBean</code>)</li>
-<li>You cannot populate full entities (e.g., <code>.Select(() =&gt; productReview.Product).WithAlias(() =&gt; result.Product)</code>)</li>
-</ul>
-
-
-<p>While the second limitation is unfortunate, you <em>can</em> specify a collection type in your result class and write a separate query to populate it. You can possibly even do this in one database round trip using the <code>.Future</code> method, which I&rsquo;ll talk about in a later post.</p>
-
-<h4><code>AliasToBeanConstructor</code></h4>
-
-<p><code>AliasToBeanConstructor</code> is similar to <code>AliasToBean</code>, except that it uses a result type&rsquo;s constructor to create new objects from result rows. Here&rsquo;s our example from above slightly modified to use <code>AliasToBeanConstructor</code> instead.</p>
-
-<p>Here&rsquo;s our modified result class:</p>
-
-<p>```csharp
-public class HighestProductReviewDTO
-{</p>
-
-<pre><code>public HighestProductReviewDTO(
-    int productId, string productName, int rating, string comments)
-{
-    this.ProductID = productId;
-    this.ProductName = productName;
-    this.Rating = rating;
-    this.Comments = comments;
-}
-
-public int ProductID { get; private set; }
-
-public string ProductName { get; private set; }
-
-public int Rating { get; private set; }
-
-public string Comments { get; private set; }
-</code></pre>
-
-<p>}
-```</p>
-
-<p>And here&rsquo;s our new QueryOver query:</p>
-
-<p>```csharp
-IList<HighestProductReviewDTO> highestReviews =</p>
-
-<pre><code>session.QueryOver&lt;Product&gt;(() =&gt; productAlias)
-    .JoinQueryOver(pr =&gt; pr.Reviews, () =&gt; productReviewAlias)
-        .WithSubquery.Where(pr =&gt; pr.Id == QueryOver.Of&lt;ProductReview&gt;()
-            .Where(rev =&gt; rev.Product.Id == productAlias.Id)
-            .OrderBy(rev =&gt; rev.Rating).Desc()
-            .Select(rev =&gt; rev.Id)
-            .Take(1)
-            .As&lt;int&gt;())
-    .SelectList(list =&gt; list
-        .Select(() =&gt; productAlias.Id)
-        .Select(() =&gt; productAlias.Name)
-        .Select(() =&gt; productReviewAlias.Rating)
-        .Select(() =&gt; productReviewAlias.Comments)
-    )
-    .TransformUsing(Transformers.AliasToBeanConstructor(
-        typeof(HighestProductReviewDTO).GetConstructors().First()))
-    .List&lt;HighestProductReviewDTO&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>We&rsquo;re passing <a href="http://msdn.microsoft.com/en-us/library/system.reflection.constructorinfo(v=vs.110).aspx"><code>ConstructorInfo</code></a> to <code>AliasToBeanConstructor</code> which we get using <code>GetConstructors</code>. NHibernate calls our constructor with the column values we&rsquo;re retrieving with our <code>SelectList</code>. Note that <em>all</em> items in the <code>SelectList</code> are passed to the constructor in the order you add them.</p>
-
-<h3>Creating your own transformer</h3>
-
-<p>The built in transformers are great, but if you need your own result transformer, that&rsquo;s possible too.</p>
-
-<p>For example, let&rsquo;s say we want to call a callback function every time a row is transformed. We could also iterate over our results after retrieving them, but this gives us a way to apply any modifications we might want while we&rsquo;re transforming the row. Here&rsquo;s our new transformer class:</p>
-
-<p>```csharp
-/// <summary>
-/// A result transformer that calls a callback after successfully transforming a result row
-/// into an instance of T
-/// </summary>
-/// <typeparam name="T">The result type</typeparam>
-public class AliasToBeanWithCallbackTransformer<T> : IResultTransformer
-{</p>
-
-<pre><code>private readonly AliasToBeanResultTransformer aliasToBeanTransformer;
-private readonly Action&lt;T&gt; callback;
-
-public AliasToBeanWithCallbackTransformer(Action&lt;T&gt; callback)
-{
-    this.aliasToBeanTransformer = new AliasToBeanResultTransformer(typeof(T));
-    this.callback = callback;
-}
-
-public IList TransformList(IList collection)
-{
-    return this.aliasToBeanTransformer.TransformList(collection);
-}
-
-public object TransformTuple(object[] tuple, string[] aliases)
-{
-    object result = this.aliasToBeanTransformer.TransformTuple(tuple, aliases);
-
-    // Call the callback before returning the result.
-    callback((T)result);
-
-    return result;
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>In this example, all I&rsquo;ve done is wrap <code>AliasToBeanResultTransformer</code> in a class that calls the callback the user specifies after calling <code>AliasToBeanResultTransformer</code>&rsquo;s <code>TransformTuple</code> method. I&rsquo;ll use this transformer in an example that retrieves product review information but with an added property, <code>DateRetrieved</code>:</p>
-
-<p>```csharp
-public class ProductReviewDTO
-{</p>
-
-<pre><code>public int ProductReviewID { get; set; }
-
-public int Rating { get; set; }
-
-public string Comments { get; set; }
-
-public DateTime DateRetrieved { get; set; }
-</code></pre>
-
-<p>}
-```</p>
-
-<p>We can use the transformer to assign <code>DateRetrieved</code> after creating a new <code>ProductReviewDTO</code>:</p>
-
-<p>```csharp
-DateTime dateRetrieved = DateTime.Now;</p>
-
-<p>IList<ProductReviewDTO> highestReviews =</p>
-
-<pre><code>session.QueryOver&lt;ProductReview&gt;()
-    .SelectList(list =&gt; list
-        .Select(pr =&gt; pr.Comments).WithAlias(() =&gt; result.Comments)
-        .Select(pr =&gt; pr.Id).WithAlias(() =&gt; result.ProductReviewID)
-        .Select(pr =&gt; pr.Rating).WithAlias(() =&gt; result.Rating)
-    )
-    // Assign "DateRetrieved correctly:
-    .TransformUsing(new AliasToBeanWithCallbackTransformer&lt;ProductReviewDTO&gt;(
-        hp =&gt; hp.DateRetrieved = dateRetrieved))
-    .Take(10)
-    .List&lt;ProductReviewDTO&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>This is a simple example, but it should demonstrate how easy it is to extend the built in transformers. It would be nice if we could subclass the built in transformers, but unfortunately the methods we would need to override are not marked <code>virtual</code>.</p>
-
-<p>A good place to look for how to write a transformer is the <a href="https://github.com/nhibernate/nhibernate-core/tree/master/src/NHibernate/Transform">NHibernate source code itself</a>.</p>
-
-<h3>Summary</h3>
-
-<p>I covered a lot in this post, but I was aiming to be comprehensive with each transformer type. This should enable you to effectively use the built in transformers and create your own if you need to.</p>
-
-<ul>
-<li>There are several built in result transformers in the <code>NHibernate.Transform</code> namespace.</li>
-<li><code>DistinctRootEntity</code> and <code>RootEntity</code> retrieve a list of the &ldquo;root&rdquo; of the QueryOver query</li>
-<li><code>AliasToEntityMap</code> and <code>PassThrough</code> retrieve the entities present in the QueryOver query in an <code>IDictionary</code> and <code>object[]</code>, respectively.</li>
-<li><code>AliasToBean</code> and <code>AliasToBeanConstructor</code> are powerful transformers that allow you to create a list of instances of a type you specify.</li>
-<li>You can create your own result transformer pretty easily to suit your needs.</li>
 </ul>
 
 ]]></content>
