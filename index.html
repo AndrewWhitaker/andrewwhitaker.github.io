@@ -9,7 +9,7 @@
   <meta name="author" content="Andrew Whitaker">
 
   
-  <meta name="description" content="This post was inspired by this StackOverflow question. Named queries are extremely useful in a variety of situations when you&rsquo;re using &hellip;">
+  <meta name="description" content="A basic tenet of QueryOver queries is that you can&rsquo;t query against unmapped properties. While this is generally true, in this post I&rsquo;ll &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -64,6 +64,47 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/">QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-01-28T19:05:39-06:00" pubdate data-updated="true">Jan 28<span>th</span>, 2015</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>A basic tenet of QueryOver queries is that you can&rsquo;t query against unmapped properties. While this is generally true, in this post I&rsquo;ll outline some strategies you can use to register properties and functions with QueryOver so that they generate meaningful SQL.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -442,49 +483,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/03/12/queryover-series-part-1-why-queryover/">QueryOver Series - Part 1: Why QueryOver?</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-03-12T21:50:58-05:00" pubdate data-updated="true">Mar 12<span>th</span>, 2014</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>QueryOver is a strongly-typed querying technology built on top of NHibernate&rsquo;s Criteria API. It was introduced in NHibernate 3.0. QueryOver is actually quite powerful and flexible, as I aim to demonstrate in this series of blog posts.</p>
-
-<p>There is not much in the way of official documentation for NHibernate in general, and even less for QueryOver. The only article on NHForge that I can find is <a href="http://nhforge.org/blogs/nhibernate/archive/2009/12/17/queryover-in-nh-3-0.aspx">here</a>. While this is a good read for an introduction, it really doesn&rsquo;t do QueryOver justice. There&rsquo;s a lot of capability that&rsquo;s not demonstrated there.</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014/03/12/queryover-series-part-1-why-queryover/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -500,6 +498,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/">QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/10/26/named-queries-and-unmapped-types/">Named Queries and Unmapped Types</a>
       </li>
     
@@ -513,10 +515,6 @@
     
       <li class="post">
         <a href="/blog/2014/08/15/queryover-series-part-7-using-sql-functions/">QueryOver Series - Part 7: Using SQL Functions</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/07/queryover-series-part-6-query-building-techniques/">QueryOver Series - Part 6: Query Building Techniques</a>
       </li>
     
   </ul>
@@ -629,7 +627,7 @@
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2014 - Andrew Whitaker -
+  Copyright &copy; 2015 - Andrew Whitaker -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
   - <span class="credit">Theme by <a href="http://www.gehaxelt.in">Gehaxelt</a></span>
   <span class="credit">and <a href="http://www.it-solutions-neef.de">IT Solutions Neef</a></span>

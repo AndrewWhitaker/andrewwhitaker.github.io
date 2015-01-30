@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: QueryOver Series | Andrew Whitaker]]></title>
+  <link href="http://blog.andrewawhitaker.com/blog/categories/queryover-series/atom.xml" rel="self"/>
+  <link href="http://blog.andrewawhitaker.com/"/>
+  <updated>2015-01-29T19:36:04-06:00</updated>
+  <id>http://blog.andrewawhitaker.com/</id>
+  <author>
+    <name><![CDATA[Andrew Whitaker]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/"/>
+    <updated>2015-01-28T19:05:39-06:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties</id>
+    <content type="html"><![CDATA[<p>A basic tenet of QueryOver queries is that you can&rsquo;t query against unmapped properties. While this is generally true, in this post I&rsquo;ll outline some strategies you can use to register properties and functions with QueryOver so that they generate meaningful SQL.</p>
+
+<!-- more -->
+
+
+<h2>Basics</h2>
+
+<p>Just as a refresher, consider the following class:</p>
+
+<p>```csharp
+public class Rectangle
+{</p>
+
+<pre><code>public Rectangle(double width, double height)
+{
+    this.Width = width;
+    this.Height = height;
+}
+
+protected Rectangle()
+{
+}
+
+public virtual int Id { get; set; }
+
+public virtual double Width { get; protected set; }
+
+public virtual double Height { get; protected set; }
+
+public virtual double Area
+{
+    get { return this.Width * this.Height; }
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Nothing too complicated right? This class maps to the following database table:</p>
+
+<p>```sql
+create table [Rectangle]
+(</p>
+
+<pre><code>[Id] int identity(1,1) primary key clustered,
+[Width] float not null,
+[Height] float not null
+</code></pre>
+
+<p>)
+```</p>
+
+<p>Notice that there&rsquo;s no <code>Area</code> column in the database. This property is computed by C# code. When you attempt to query against it using QueryOver:</p>
+
+<p>```csharp
+session.QueryOver<Rectangle>()</p>
+
+<pre><code>.Where(r =&gt; r.Area &gt; 4.0)
+.List&lt;Rectangle&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>You&rsquo;ll get the following exception:</p>
+
+<p>```
+NHibernate.QueryException was unhandled
+  HResult=-2146232832
+  Message=could not resolve property: Area of: Rectangle.Rectangle
+  Source=NHibernate
+  StackTrace:</p>
+
+<pre><code>   at NHibernate.Persister.Entity.AbstractPropertyMapping.ToType(String propertyName)
+   at NHibernate.Persister.Entity.AbstractEntityPersister.GetSubclassPropertyTableNumber(String propertyPath)
+   at NHibernate.Persister.Entity.BasicEntityPropertyMapping.ToColumns(String alias, String propertyName)
+   at NHibernate.Persister.Entity.AbstractEntityPersister.ToColumns(String alias, String propertyName)
+   at NHibernate.Loader.Criteria.CriteriaQueryTranslator.GetColumns(ICriteria subcriteria, String propertyName)
+   at NHibernate.Loader.Criteria.CriteriaQueryTranslator.GetColumnsUsingProjection(ICriteria subcriteria, String propertyName)
+   at NHibernate.Criterion.CriterionUtil.GetColumnNamesUsingPropertyName(ICriteriaQuery criteriaQuery, ICriteria criteria, String propertyName, Object value, ICriterion critertion)
+   at NHibernate.Criterion.CriterionUtil.GetColumnNamesForSimpleExpression(String propertyName, IProjection projection, ICriteriaQuery criteriaQuery, ICriteria criteria, IDictionary`2 enabledFilters, ICriterion criterion, Object value)
+   ...
+</code></pre>
+
+<p>```</p>
+
+<p>The gist is that since <code>Area</code> is an unmapped property, NHibernate doesn&rsquo;t know what to do with it. Lets see if we can change that.</p>
+
+<h2>Registering an Unmapped Property with QueryOver</h2>
+
+<p>To get the gist of what we&rsquo;re going to do, it might be helpful to take a look at the <a href="https://github.com/nhibernate/nhibernate-core/blob/master/src/NHibernate/Criterion/ProjectionsExtensions.cs">ProjectionExtensions.cs</a> and <a href="https://github.com/nhibernate/nhibernate-core/blob/master/src/NHibernate/Impl/ExpressionProcessor.cs">ExpressionProcessor.cs</a> files in the NHibernate source code. There are only two things that we need to do:</p>
+
+<ol>
+<li>Write a function that can translate an <code>Expression</code> and turns it into a <code>Projection</code> that QueryOver can use.</li>
+<li>Register the function from #1 with the <code>ExpressionProcessor</code> class referenced above.</li>
+</ol>
+
+
+<h3>Translating the <code>Area</code> property into a <code>Projection</code></h3>
+
+<p>If you look at the <code>ExpressionProcessor</code> class, you&rsquo;ll see a bunch of <code>RegisterCustomProjection</code> calls. A few of them are used to let you use <code>DateTime</code> properties like <code>Month</code> or <code>Hour</code> directly in a QueryOver query. Since this is really close to what we want to do with the <code>Area</code> property, lets follow those methods as an example.</p>
+
+<p>Taking a closer look at <code>RegisterCustomProjection</code>, you&rsquo;ll notice that the function takes two arguments:</p>
+
+<ol>
+<li>The property or method we want to register, and</li>
+<li>A <code>Func&lt;MemberExpression, IProjection</code>. In other words, a lambda that takes a <code>MemberExpression</code> and returns an <code>IProjection</code>.</li>
+</ol>
+
+
+<p>Let&rsquo;s implement #2 first.</p>
+
+<h4>Implementing the <code>ProcessArea</code> function</h4>
+
+<p>The hardest part of this process is going to be the <code>ProcessArea</code> function that will take an expression and somehow return a projection that computes the length. Here&rsquo;s what that looks like:</p>
+
+<p>```csharp
+public static class RectangleExtensions
+{</p>
+
+<pre><code>/// &lt;summary&gt;
+/// Helper function that takes an "alias" and property name and combines them into 
+/// property access that can then be used in a projection.
+/// &lt;/summary&gt;
+/// &lt;param name="alias"&gt;The alias.&lt;/param&gt;
+/// &lt;param name="property"&gt;The property.&lt;/param&gt;
+/// &lt;returns&gt;A string representing full property access.&lt;/returns&gt;
+private static string BuildPropertyName(string alias, string property)
+{
+    if (!string.IsNullOrEmpty(alias))
+    {
+        return string.Format("{0}.{1}", alias, property);
+    }
+
+    return property;
+}
+
+/// &lt;summary&gt;
+/// Processes the "Area" property access, an unmapped property,
+/// and turns it into a computation on the SQL side.
+/// &lt;/summary&gt;
+/// &lt;param name="expression"&gt;The expression to process.&lt;/param&gt;
+/// &lt;returns&gt;The resulting projection.&lt;/returns&gt;
+public static IProjection ProcessArea(System.Linq.Expressions.Expression expression)
+{
+    /* Expressions from which we can get "Width" and "Height" property names to 
+     * build a projection */
+    Expression&lt;Func&lt;Rectangle, double&gt;&gt; w = r =&gt; r.Width;
+    Expression&lt;Func&lt;Rectangle, double&gt;&gt; h = r =&gt; r.Height;
+
+    /* The name of the alias used in the query, if any */
+    string aliasName = ExpressionProcessor.FindMemberExpression(expression);
+
+    /* Retrieves the strings "Width" and "Height" from the expressions above */
+    string widthName = ExpressionProcessor.FindMemberExpression(w.Body);
+    string heightName = ExpressionProcessor.FindMemberExpression(h.Body);
+
+    /* Combines the "Width" and "Height" strings with the alias name to 
+     * build a projection: */
+    PropertyProjection widthProjection = 
+        Projections.Property(BuildPropertyName(aliasName, widthName));
+
+    PropertyProjection hProjection =
+        Projections.Property(BuildPropertyName(aliasName, heightName));
+
+    /* Finally, return a SQL function that computes the product of */
+     * Width and Height */
+    ISQLFunction multiplication =
+        new VarArgsSQLFunction(NHibernateUtil.Double, "(", "*", ")");
+
+    return Projections.SqlFunction(
+        multiplication, NHibernateUtil.Double, widthProjection, hProjection);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>There&rsquo;s a lot going on there. Basically we need to get the <code>Width</code> and <code>Height</code> properties from the <code>Rectangle</code> class so that we can use them in a projection. This would be simple, but since the query could be using an alias, we need to combine the property names with the alias (which can be <code>string.Empty</code>) to create the proper property access.</p>
+
+<p>Grabbing the property names as strings from <code>Expression</code>s prevents magic strings, which QueryOver is designed to prevent anyway.</p>
+
+<p>Next, we need to build actual <code>Projection</code>s from the strings we&rsquo;ve made, which is easy using the overload of <code>Projection.Property</code> that takes a <code>string</code>.</p>
+
+<p>Finally, we&rsquo;ll register our function with the <code>ExpressionProcessor</code>.</p>
+
+<h4>Registering the <code>Area</code> property and <code>ProcessArea</code> function with the <code>ExpressionProcessor</code>.</h4>
+
+<p>I don&rsquo;t think it matters exactly <em>when</em> you register your custom function, but it obviously has to be before you use the property or method in a query.</p>
+
+<p>Here&rsquo;s what the code looks like:</p>
+
+<p>```csharp
+ExpressionProcessor.RegisterCustomProjection(</p>
+
+<pre><code>() =&gt; default(Rectangle).Area,
+expr =&gt; RectangleExtensions.ProcessArea(expr.Expression));
+</code></pre>
+
+<p>```</p>
+
+<p>&hellip;And that&rsquo;s basically it. We&rsquo;re telling NHibernate to call the <code>ProcessArea</code> function when the <code>Rectangle.Area</code> property is used.</p>
+
+<p>Now our original query is valid and should generate the correct SQL:</p>
+
+<p>```sql
+SELECT</p>
+
+<pre><code>this_.Id as Id0_0_,
+this_.Width as Width0_0_,
+this_.Height as Height0_0_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Rectangle this_
+</code></pre>
+
+<p>WHERE</p>
+
+<pre><code>(
+    this_.Width*this_.Height
+) &gt; 4
+</code></pre>
+
+<p>```</p>
+
+<h3>Using a user-defined function to compute <code>Area</code></h3>
+
+<p>Now, lets take the concept a slightly different direction. Lets assume that the area function is defined in a user-defined function:</p>
+
+<p>```sql
+create function UFN_CalculateArea
+(</p>
+
+<pre><code>@Width float,
+@Height float
+</code></pre>
+
+<p>)
+returns float
+as
+begin</p>
+
+<pre><code>declare @Area float;
+
+select @Area = @Width * @Height;
+
+return @Area;
+</code></pre>
+
+<p>end
+```</p>
+
+<p>Now our QueryOver code becomes:</p>
+
+<p>```csharp
+/// <summary>
+/// Processes the &ldquo;Area&rdquo; property access, an unmapped property,
+/// and turns it into a computation on the SQL side.
+/// </summary>
+/// <param name="expression">The expression to process.</param>
+/// <returns>The resulting projection.</returns>
+public static IProjection ProcessArea(System.Linq.Expressions.Expression expression)
+{</p>
+
+<pre><code>/* Expressions from which we can get "Width" and "Height" property names to 
+ * build a projection */
+Expression&lt;Func&lt;Rectangle, double&gt;&gt; w = r =&gt; r.Width;
+Expression&lt;Func&lt;Rectangle, double&gt;&gt; h = r =&gt; r.Height;
+
+/* The name of the alias used in the query, if any */
+string aliasName = ExpressionProcessor.FindMemberExpression(expression);
+
+/* Retrieves the strings "Width" and "Height" from the expressions above */
+string widthName = ExpressionProcessor.FindMemberExpression(w.Body);
+string heightName = ExpressionProcessor.FindMemberExpression(h.Body);
+
+/* Combines the "Width" and "Height" strings with the alias name to 
+ * build a projection: */
+PropertyProjection widthProjection =
+    Projections.Property(BuildPropertyName(aliasName, widthName));
+
+PropertyProjection hProjection =
+    Projections.Property(BuildPropertyName(aliasName, heightName));
+
+/* Finally, return ISQLFunction that calls our user-defined function:  */
+ISQLFunction multiplication =
+    new SQLFunctionTemplate(NHibernateUtil.Double, "dbo.UFN_CalculateArea(?1, ?2)");
+
+return Projections.SqlFunction(
+    multiplication, NHibernateUtil.Double, widthProjection, hProjection);
+</code></pre>
+
+<p>}
+```</p>
+
+<p>And the generated SQL is what we expect:</p>
+
+<p>```sql
+SELECT</p>
+
+<pre><code>this_.Id as Id0_0_,
+this_.Width as Width0_0_,
+this_.Height as Height0_0_
+</code></pre>
+
+<p>FROM</p>
+
+<pre><code>Rectangle this_
+</code></pre>
+
+<p>WHERE</p>
+
+<pre><code>dbo.UFN_CalculateArea(this_.Width, this_.Height) &gt; 4;
+</code></pre>
+
+<p>```</p>
+
+<h2>Other Tips</h2>
+
+<p>There are a few things worth noting here:</p>
+
+<h3>Registered methods need not be implemented in C#</h3>
+
+
+<p>We could actually decide not to provide an implementation for our <code>Area</code> property:</p>
+
+<p>```csharp
+public class Rectangle
+{</p>
+
+<pre><code>public Rectangle(double width, double height)
+{
+    this.Width = width;
+    this.Height = height;
+}
+
+protected Rectangle()
+{
+}
+
+public virtual int Id { get; set; }
+
+public virtual double Width { get; protected set; }
+
+public virtual double Height { get; protected set; }
+
+public virtual double Area
+{
+    get
+    {
+        throw new NotImplementedException("Only available inside a QueryOver query"); 
+    }
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>NHibernate will happily transform the <code>Area</code> property into the correct SQL as before&mdash;after all, it isn&rsquo;t actually <em>invoking</em> the property, it&rsquo;s evaluating it inside of an expression tree.</p>
+
+<p>Another example of where this might be useful is for functionality that&rsquo;s actually only available in SQL. Let&rsquo;s pick on the <code>checksum</code> function. If we wanted to use that inside of a QueryOver query, one way to do that would be to create a <code>CheckSum</code> extension method and register it (check <a href="../blog/2014/08/15/queryover-series-part-7-using-sql-functions">Using SQL Functions</a> for how to add the <code>checksum</code> function with a custom dialect):</p>
+
+<p>Here&rsquo;s our <code>CheckSum</code> method:</p>
+
+<p>```csharp
+public static class QueryOverExtensions
+{</p>
+
+<pre><code>public static int CheckSum(this object o)
+{
+    throw new NotImplementedException("Must be used inside of a QueryOver query.");
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Here&rsquo;s the <code>ProcessCheckSum</code> method that processes the <code>CheckSum</code> method call into an <code>IProjection</code>:</p>
+
+<p>```csharp
+public static class Extensions
+{</p>
+
+<pre><code>public static IProjection ProcessCheckSum(MethodCallExpression methodCallExpression)
+{
+    IProjection property =
+        ExpressionProcessor.FindMemberProjection(
+            methodCallExpression.Arguments[0]).AsProjection();
+
+    return Projections.SqlFunction("checksum", NHibernateUtil.Int32, property);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Finally, here&rsquo;s registering it with the <code>ExpressionProcessor</code>:</p>
+
+<p>```csharp
+ExpressionProcessor.RegisterCustomProjection(</p>
+
+<pre><code>() =&gt; default(object).CheckSum(), Extensions.ProcessCheckSum);
+</code></pre>
+
+<p>```</p>
+
+<p>Here&rsquo;s an example of getting a <code>checksum</code> of <code>Rectangle.Height</code>:</p>
+
+<p>```csharp
+int checksum = session.QueryOver<Rectangle>()</p>
+
+<pre><code>.Select(rct =&gt; rct.Height.CheckSum())
+.Take(1)
+.SingleOrDefault&lt;int&gt;();
+</code></pre>
+
+<p>```</p>
+
+<h3>Using multiple properties/columns in a function call</h3>
+
+<p>There isn&rsquo;t an example of this (that I can find) in the NHibernate code base, so I figured I&rsquo;d go ahead and provide one.</p>
+
+<p>Continuing with the <code>checksum</code> example above, what if we wanted to supply some additional columns to the <code>checksum</code> function? At this point it might be wiser to use the strategy outlined in Part 7, but lets expand the <code>CheckSum</code> extension method for the sake of an example.</p>
+
+<p>Here&rsquo;s how the extension method itself needs to change:</p>
+
+<p>```csharp
+public static class QueryOverExtensions
+{</p>
+
+<pre><code>public static int CheckSum(this object o, params object[] additionalProperties)
+{
+    throw new NotImplementedException("Must be used inside of a QueryOver query.");
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Note the use of <code>params</code>&mdash;we&rsquo;ve made it possible for the user of our method to supply as many additional properties as they&rsquo;d like.</p>
+
+<p>Here&rsquo;s the new implementation of <code>ProcessCheckSum</code>:</p>
+
+<p>```csharp
+public static IProjection ProcessCheckSum(MethodCallExpression methodCallExpression)
+{</p>
+
+<pre><code>/* Retrieve the property the extension method was called on as a projection */
+IProjection property =
+    ExpressionProcessor.FindMemberProjection(methodCallExpression.Arguments[0])
+        .AsProjection();
+
+var projections = new List&lt;IProjection&gt; { property };
+
+/* Process the array that's supplied as the second argument in the expression. */
+var additionalProperties = (NewArrayExpression)methodCallExpression.Arguments[1];
+
+/* Convert each item in the array into a projection */
+IEnumerable&lt;IProjection&gt; additionalProjections =
+    additionalProperties.Expressions
+        .Select(expr =&gt; 
+            ExpressionProcessor.FindMemberProjection(expr).AsProjection());
+
+/* Combine the first projection and the additional ones */
+projections.AddRange(additionalProjections);
+
+return Projections.SqlFunction(
+    "checksum", NHibernateUtil.Int32, projections.ToArray());
+</code></pre>
+
+<p>}
+```</p>
+
+<p>The key here is to notice that <code>Arguments[1]</code> is of type <code>NewArrayExpression</code> (because of the second argument being and array). We need to take out the expressions <em>within</em> that array (that&rsquo;s what the LINQ block does) and then supply those projections to <code>Projections.SqlFunction</code>.</p>
+
+<p>Now we can call our extension method with more properties:</p>
+
+<p>```csharp
+int checksum = session.QueryOver<Rectangle>(() => rectAlias)</p>
+
+<pre><code>.Select(rct =&gt; rct.Height.CheckSum(rct.Width))
+.Take(1)
+.SingleOrDefault&lt;int&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Note that <code>rct.Width</code> could easily be a property referenced with an alias (e.g. <code>rectAlias.Width</code>), even one from another class.</p>
+
+<h2>Summary</h2>
+
+<p>Hopefully this post has been helpful in providing some useful strategies on how to get NHibernate to generate meaningful SQL from a QueryOver query, even when using unmapped properties or methods. Doing this could be hugely helpful when you have existing user-defined functions you need to call, or you&rsquo;d like to use a computed property inside of a query, rather than pull back every item in your table and then filter it.</p>
+
+<p>To summarize:</p>
+
+<ul>
+<li>Normally, unmapped properties are unavailable for querying inside of a QueryOver query, since NHibernate does not know how to translate the property into the correct SQL.</li>
+<li>You can tell NHibernate what to do with a method or property using the static <code>ExpressionProcessor</code> class and a method that returns an <code>IProjection</code> given an expression containing the method call.</li>
+<li>As long as you can represent the SQL you want to generate as some kind of <code>IProjection</code>, you can register any property or method with the <code>ExpressionProcessor</code>.</li>
+<li>You can create extension methods or properties that are only available for use inside of a QueryOver query.</li>
+<li>Methods can contain a provision for processing an arbitrary number of properties for inclusion in the SQL that&rsquo;s ultimately generated.</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

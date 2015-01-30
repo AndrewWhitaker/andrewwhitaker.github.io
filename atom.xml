@@ -4,7 +4,7 @@
   <title><![CDATA[Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2014-10-26T17:33:58-05:00</updated>
+  <updated>2015-01-29T19:36:04-06:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,706 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/"/>
+    <updated>2015-01-28T19:05:39-06:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties</id>
+    <content type="html"><![CDATA[<p>A basic tenet of QueryOver queries is that you can&rsquo;t query against unmapped properties. While this is generally true, in this post I&rsquo;ll outline some strategies you can use to register properties and functions with QueryOver so that they generate meaningful SQL.</p>
+
+<!-- more -->
+
+
+<h2>Basics</h2>
+
+<p>Just as a refresher, consider the following class:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">Rectangle</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="nf">Rectangle</span><span class="p">(</span><span class="kt">double</span> <span class="n">width</span><span class="p">,</span> <span class="kt">double</span> <span class="n">height</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Width</span> <span class="p">=</span> <span class="n">width</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Height</span> <span class="p">=</span> <span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">protected</span> <span class="nf">Rectangle</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">int</span> <span class="n">Id</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">double</span> <span class="n">Width</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">protected</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">double</span> <span class="n">Height</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">protected</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">double</span> <span class="n">Area</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="n">Width</span> <span class="p">*</span> <span class="k">this</span><span class="p">.</span><span class="n">Height</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Nothing too complicated right? This class maps to the following database table:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">create</span> <span class="k">table</span> <span class="p">[</span><span class="n">Rectangle</span><span class="p">]</span>
+</span><span class='line'><span class="p">(</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">Id</span><span class="p">]</span> <span class="nb">int</span> <span class="k">identity</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="k">primary</span> <span class="k">key</span> <span class="n">clustered</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">Width</span><span class="p">]</span> <span class="nb">float</span> <span class="k">not</span> <span class="k">null</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">Height</span><span class="p">]</span> <span class="nb">float</span> <span class="k">not</span> <span class="k">null</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Notice that there&rsquo;s no <code>Area</code> column in the database. This property is computed by C# code. When you attempt to query against it using QueryOver:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">r</span> <span class="p">=&gt;</span> <span class="n">r</span><span class="p">.</span><span class="n">Area</span> <span class="p">&gt;</span> <span class="m">4.0</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You&rsquo;ll get the following exception:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">NHibernate</span><span class="p">.</span><span class="n">QueryException</span> <span class="n">was</span> <span class="n">unhandled</span>
+</span><span class='line'>  <span class="n">HResult</span><span class="p">=-</span><span class="m">2146232832</span>
+</span><span class='line'>  <span class="n">Message</span><span class="p">=</span><span class="n">could</span> <span class="n">not</span> <span class="n">resolve</span> <span class="n">property</span><span class="p">:</span> <span class="n">Area</span> <span class="n">of</span><span class="p">:</span> <span class="n">Rectangle</span><span class="p">.</span><span class="n">Rectangle</span>
+</span><span class='line'>  <span class="n">Source</span><span class="p">=</span><span class="n">NHibernate</span>
+</span><span class='line'>  <span class="n">StackTrace</span><span class="p">:</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">AbstractPropertyMapping</span><span class="p">.</span><span class="n">ToType</span><span class="p">(</span><span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">AbstractEntityPersister</span><span class="p">.</span><span class="n">GetSubclassPropertyTableNumber</span><span class="p">(</span><span class="n">String</span> <span class="n">propertyPath</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">BasicEntityPropertyMapping</span><span class="p">.</span><span class="n">ToColumns</span><span class="p">(</span><span class="n">String</span> <span class="k">alias</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">AbstractEntityPersister</span><span class="p">.</span><span class="n">ToColumns</span><span class="p">(</span><span class="n">String</span> <span class="k">alias</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Loader</span><span class="p">.</span><span class="n">Criteria</span><span class="p">.</span><span class="n">CriteriaQueryTranslator</span><span class="p">.</span><span class="n">GetColumns</span><span class="p">(</span><span class="n">ICriteria</span> <span class="n">subcriteria</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Loader</span><span class="p">.</span><span class="n">Criteria</span><span class="p">.</span><span class="n">CriteriaQueryTranslator</span><span class="p">.</span><span class="n">GetColumnsUsingProjection</span><span class="p">(</span><span class="n">ICriteria</span> <span class="n">subcriteria</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Criterion</span><span class="p">.</span><span class="n">CriterionUtil</span><span class="p">.</span><span class="n">GetColumnNamesUsingPropertyName</span><span class="p">(</span><span class="n">ICriteriaQuery</span> <span class="n">criteriaQuery</span><span class="p">,</span> <span class="n">ICriteria</span> <span class="n">criteria</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">,</span> <span class="n">Object</span> <span class="k">value</span><span class="p">,</span> <span class="n">ICriterion</span> <span class="n">critertion</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Criterion</span><span class="p">.</span><span class="n">CriterionUtil</span><span class="p">.</span><span class="n">GetColumnNamesForSimpleExpression</span><span class="p">(</span><span class="n">String</span> <span class="n">propertyName</span><span class="p">,</span> <span class="n">IProjection</span> <span class="n">projection</span><span class="p">,</span> <span class="n">ICriteriaQuery</span> <span class="n">criteriaQuery</span><span class="p">,</span> <span class="n">ICriteria</span> <span class="n">criteria</span><span class="p">,</span> <span class="n">IDictionary</span><span class="err">`</span><span class="m">2</span> <span class="n">enabledFilters</span><span class="p">,</span> <span class="n">ICriterion</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">Object</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'>       <span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The gist is that since <code>Area</code> is an unmapped property, NHibernate doesn&rsquo;t know what to do with it. Lets see if we can change that.</p>
+
+<h2>Registering an Unmapped Property with QueryOver</h2>
+
+<p>To get the gist of what we&rsquo;re going to do, it might be helpful to take a look at the <a href="https://github.com/nhibernate/nhibernate-core/blob/master/src/NHibernate/Criterion/ProjectionsExtensions.cs">ProjectionExtensions.cs</a> and <a href="https://github.com/nhibernate/nhibernate-core/blob/master/src/NHibernate/Impl/ExpressionProcessor.cs">ExpressionProcessor.cs</a> files in the NHibernate source code. There are only two things that we need to do:</p>
+
+<ol>
+<li>Write a function that can translate an <code>Expression</code> and turns it into a <code>Projection</code> that QueryOver can use.</li>
+<li>Register the function from #1 with the <code>ExpressionProcessor</code> class referenced above.</li>
+</ol>
+
+
+<h3>Translating the <code>Area</code> property into a <code>Projection</code></h3>
+
+<p>If you look at the <code>ExpressionProcessor</code> class, you&rsquo;ll see a bunch of <code>RegisterCustomProjection</code> calls. A few of them are used to let you use <code>DateTime</code> properties like <code>Month</code> or <code>Hour</code> directly in a QueryOver query. Since this is really close to what we want to do with the <code>Area</code> property, lets follow those methods as an example.</p>
+
+<p>Taking a closer look at <code>RegisterCustomProjection</code>, you&rsquo;ll notice that the function takes two arguments:</p>
+
+<ol>
+<li>The property or method we want to register, and</li>
+<li>A <code>Func&lt;MemberExpression, IProjection</code>. In other words, a lambda that takes a <code>MemberExpression</code> and returns an <code>IProjection</code>.</li>
+</ol>
+
+
+<p>Let&rsquo;s implement #2 first.</p>
+
+<h4>Implementing the <code>ProcessArea</code> function</h4>
+
+<p>The hardest part of this process is going to be the <code>ProcessArea</code> function that will take an expression and somehow return a projection that computes the length. Here&rsquo;s what that looks like:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">RectangleExtensions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">/// &lt;summary&gt;</span>
+</span><span class='line'>    <span class="c1">/// Helper function that takes an &quot;alias&quot; and property name and combines them into </span>
+</span><span class='line'>    <span class="c1">/// property access that can then be used in a projection.</span>
+</span><span class='line'>    <span class="c1">/// &lt;/summary&gt;</span>
+</span><span class='line'>    <span class="c1">/// &lt;param name=&quot;alias&quot;&gt;The alias.&lt;/param&gt;</span>
+</span><span class='line'>    <span class="c1">/// &lt;param name=&quot;property&quot;&gt;The property.&lt;/param&gt;</span>
+</span><span class='line'>    <span class="c1">/// &lt;returns&gt;A string representing full property access.&lt;/returns&gt;</span>
+</span><span class='line'>    <span class="k">private</span> <span class="k">static</span> <span class="kt">string</span> <span class="nf">BuildPropertyName</span><span class="p">(</span><span class="kt">string</span> <span class="k">alias</span><span class="p">,</span> <span class="kt">string</span> <span class="n">property</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(!</span><span class="kt">string</span><span class="p">.</span><span class="n">IsNullOrEmpty</span><span class="p">(</span><span class="k">alias</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kt">string</span><span class="p">.</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;{0}.{1}&quot;</span><span class="p">,</span> <span class="k">alias</span><span class="p">,</span> <span class="n">property</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">property</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">/// &lt;summary&gt;</span>
+</span><span class='line'>    <span class="c1">/// Processes the &quot;Area&quot; property access, an unmapped property,</span>
+</span><span class='line'>    <span class="c1">/// and turns it into a computation on the SQL side.</span>
+</span><span class='line'>    <span class="c1">/// &lt;/summary&gt;</span>
+</span><span class='line'>    <span class="c1">/// &lt;param name=&quot;expression&quot;&gt;The expression to process.&lt;/param&gt;</span>
+</span><span class='line'>    <span class="c1">/// &lt;returns&gt;The resulting projection.&lt;/returns&gt;</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">static</span> <span class="n">IProjection</span> <span class="nf">ProcessArea</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Linq</span><span class="p">.</span><span class="n">Expressions</span><span class="p">.</span><span class="n">Expression</span> <span class="n">expression</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="cm">/* Expressions from which we can get &quot;Width&quot; and &quot;Height&quot; property names to </span>
+</span><span class='line'><span class="cm">         * build a projection */</span>
+</span><span class='line'>        <span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">,</span> <span class="kt">double</span><span class="p">&gt;&gt;</span> <span class="n">w</span> <span class="p">=</span> <span class="n">r</span> <span class="p">=&gt;</span> <span class="n">r</span><span class="p">.</span><span class="n">Width</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">,</span> <span class="kt">double</span><span class="p">&gt;&gt;</span> <span class="n">h</span> <span class="p">=</span> <span class="n">r</span> <span class="p">=&gt;</span> <span class="n">r</span><span class="p">.</span><span class="n">Height</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="cm">/* The name of the alias used in the query, if any */</span>
+</span><span class='line'>        <span class="kt">string</span> <span class="n">aliasName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">expression</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="cm">/* Retrieves the strings &quot;Width&quot; and &quot;Height&quot; from the expressions above */</span>
+</span><span class='line'>        <span class="kt">string</span> <span class="n">widthName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span><span class='line'>        <span class="kt">string</span> <span class="n">heightName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">h</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="cm">/* Combines the &quot;Width&quot; and &quot;Height&quot; strings with the alias name to </span>
+</span><span class='line'><span class="cm">         * build a projection: */</span>
+</span><span class='line'>        <span class="n">PropertyProjection</span> <span class="n">widthProjection</span> <span class="p">=</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">BuildPropertyName</span><span class="p">(</span><span class="n">aliasName</span><span class="p">,</span> <span class="n">widthName</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">PropertyProjection</span> <span class="n">hProjection</span> <span class="p">=</span>
+</span><span class='line'>            <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">BuildPropertyName</span><span class="p">(</span><span class="n">aliasName</span><span class="p">,</span> <span class="n">heightName</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="cm">/* Finally, return a SQL function that computes the product of */</span>
+</span><span class='line'>         <span class="p">*</span> <span class="n">Width</span> <span class="n">and</span> <span class="n">Height</span> <span class="p">*/</span>
+</span><span class='line'>        <span class="n">ISQLFunction</span> <span class="n">multiplication</span> <span class="p">=</span>
+</span><span class='line'>            <span class="k">new</span> <span class="nf">VarArgsSQLFunction</span><span class="p">(</span><span class="n">NHibernateUtil</span><span class="p">.</span><span class="n">Double</span><span class="p">,</span> <span class="s">&quot;(&quot;</span><span class="p">,</span> <span class="s">&quot;*&quot;</span><span class="p">,</span> <span class="s">&quot;)&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Projections</span><span class="p">.</span><span class="n">SqlFunction</span><span class="p">(</span>
+</span><span class='line'>            <span class="n">multiplication</span><span class="p">,</span> <span class="n">NHibernateUtil</span><span class="p">.</span><span class="n">Double</span><span class="p">,</span> <span class="n">widthProjection</span><span class="p">,</span> <span class="n">hProjection</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>There&rsquo;s a lot going on there. Basically we need to get the <code>Width</code> and <code>Height</code> properties from the <code>Rectangle</code> class so that we can use them in a projection. This would be simple, but since the query could be using an alias, we need to combine the property names with the alias (which can be <code>string.Empty</code>) to create the proper property access.</p>
+
+<p>Grabbing the property names as strings from <code>Expression</code>s prevents magic strings, which QueryOver is designed to prevent anyway.</p>
+
+<p>Next, we need to build actual <code>Projection</code>s from the strings we&rsquo;ve made, which is easy using the overload of <code>Projection.Property</code> that takes a <code>string</code>.</p>
+
+<p>Finally, we&rsquo;ll register our function with the <code>ExpressionProcessor</code>.</p>
+
+<h4>Registering the <code>Area</code> property and <code>ProcessArea</code> function with the <code>ExpressionProcessor</code>.</h4>
+
+<p>I don&rsquo;t think it matters exactly <em>when</em> you register your custom function, but it obviously has to be before you use the property or method in a query.</p>
+
+<p>Here&rsquo;s what the code looks like:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">RegisterCustomProjection</span><span class="p">(</span>
+</span><span class='line'>    <span class="p">()</span> <span class="p">=&gt;</span> <span class="k">default</span><span class="p">(</span><span class="n">Rectangle</span><span class="p">).</span><span class="n">Area</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">expr</span> <span class="p">=&gt;</span> <span class="n">RectangleExtensions</span><span class="p">.</span><span class="n">ProcessArea</span><span class="p">(</span><span class="n">expr</span><span class="p">.</span><span class="n">Expression</span><span class="p">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&hellip;And that&rsquo;s basically it. We&rsquo;re telling NHibernate to call the <code>ProcessArea</code> function when the <code>Rectangle.Area</code> property is used.</p>
+
+<p>Now our original query is valid and should generate the correct SQL:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Id</span> <span class="k">as</span> <span class="n">Id0_0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Width</span> <span class="k">as</span> <span class="n">Width0_0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Height</span> <span class="k">as</span> <span class="n">Height0_0_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Rectangle</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">WHERE</span>
+</span><span class='line'>    <span class="p">(</span>
+</span><span class='line'>        <span class="n">this_</span><span class="p">.</span><span class="n">Width</span><span class="o">*</span><span class="n">this_</span><span class="p">.</span><span class="n">Height</span>
+</span><span class='line'>    <span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Using a user-defined function to compute <code>Area</code></h3>
+
+<p>Now, lets take the concept a slightly different direction. Lets assume that the area function is defined in a user-defined function:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">create</span> <span class="k">function</span> <span class="n">UFN_CalculateArea</span>
+</span><span class='line'><span class="p">(</span>
+</span><span class='line'>  <span class="o">@</span><span class="n">Width</span> <span class="nb">float</span><span class="p">,</span>
+</span><span class='line'>  <span class="o">@</span><span class="n">Height</span> <span class="nb">float</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'><span class="k">returns</span> <span class="nb">float</span>
+</span><span class='line'><span class="k">as</span>
+</span><span class='line'><span class="k">begin</span>
+</span><span class='line'>  <span class="k">declare</span> <span class="o">@</span><span class="n">Area</span> <span class="nb">float</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">select</span> <span class="o">@</span><span class="n">Area</span> <span class="o">=</span> <span class="o">@</span><span class="n">Width</span> <span class="o">*</span> <span class="o">@</span><span class="n">Height</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="o">@</span><span class="n">Area</span><span class="p">;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now our QueryOver code becomes:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="c1">/// &lt;summary&gt;</span>
+</span><span class='line'><span class="c1">/// Processes the &quot;Area&quot; property access, an unmapped property,</span>
+</span><span class='line'><span class="c1">/// and turns it into a computation on the SQL side.</span>
+</span><span class='line'><span class="c1">/// &lt;/summary&gt;</span>
+</span><span class='line'><span class="c1">/// &lt;param name=&quot;expression&quot;&gt;The expression to process.&lt;/param&gt;</span>
+</span><span class='line'><span class="c1">/// &lt;returns&gt;The resulting projection.&lt;/returns&gt;</span>
+</span><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IProjection</span> <span class="nf">ProcessArea</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="n">Linq</span><span class="p">.</span><span class="n">Expressions</span><span class="p">.</span><span class="n">Expression</span> <span class="n">expression</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="cm">/* Expressions from which we can get &quot;Width&quot; and &quot;Height&quot; property names to </span>
+</span><span class='line'><span class="cm">     * build a projection */</span>
+</span><span class='line'>    <span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">,</span> <span class="kt">double</span><span class="p">&gt;&gt;</span> <span class="n">w</span> <span class="p">=</span> <span class="n">r</span> <span class="p">=&gt;</span> <span class="n">r</span><span class="p">.</span><span class="n">Width</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">,</span> <span class="kt">double</span><span class="p">&gt;&gt;</span> <span class="n">h</span> <span class="p">=</span> <span class="n">r</span> <span class="p">=&gt;</span> <span class="n">r</span><span class="p">.</span><span class="n">Height</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* The name of the alias used in the query, if any */</span>
+</span><span class='line'>    <span class="kt">string</span> <span class="n">aliasName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">expression</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Retrieves the strings &quot;Width&quot; and &quot;Height&quot; from the expressions above */</span>
+</span><span class='line'>    <span class="kt">string</span> <span class="n">widthName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">string</span> <span class="n">heightName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">h</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Combines the &quot;Width&quot; and &quot;Height&quot; strings with the alias name to </span>
+</span><span class='line'><span class="cm">     * build a projection: */</span>
+</span><span class='line'>    <span class="n">PropertyProjection</span> <span class="n">widthProjection</span> <span class="p">=</span>
+</span><span class='line'>        <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">BuildPropertyName</span><span class="p">(</span><span class="n">aliasName</span><span class="p">,</span> <span class="n">widthName</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">PropertyProjection</span> <span class="n">hProjection</span> <span class="p">=</span>
+</span><span class='line'>        <span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">(</span><span class="n">BuildPropertyName</span><span class="p">(</span><span class="n">aliasName</span><span class="p">,</span> <span class="n">heightName</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Finally, return ISQLFunction that calls our user-defined function:  */</span>
+</span><span class='line'>    <span class="n">ISQLFunction</span> <span class="n">multiplication</span> <span class="p">=</span>
+</span><span class='line'>        <span class="k">new</span> <span class="nf">SQLFunctionTemplate</span><span class="p">(</span><span class="n">NHibernateUtil</span><span class="p">.</span><span class="n">Double</span><span class="p">,</span> <span class="s">&quot;dbo.UFN_CalculateArea(?1, ?2)&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">Projections</span><span class="p">.</span><span class="n">SqlFunction</span><span class="p">(</span>
+</span><span class='line'>        <span class="n">multiplication</span><span class="p">,</span> <span class="n">NHibernateUtil</span><span class="p">.</span><span class="n">Double</span><span class="p">,</span> <span class="n">widthProjection</span><span class="p">,</span> <span class="n">hProjection</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And the generated SQL is what we expect:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Id</span> <span class="k">as</span> <span class="n">Id0_0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Width</span> <span class="k">as</span> <span class="n">Width0_0_</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">this_</span><span class="p">.</span><span class="n">Height</span> <span class="k">as</span> <span class="n">Height0_0_</span>
+</span><span class='line'><span class="k">FROM</span>
+</span><span class='line'>    <span class="n">Rectangle</span> <span class="n">this_</span>
+</span><span class='line'><span class="k">WHERE</span>
+</span><span class='line'>    <span class="n">dbo</span><span class="p">.</span><span class="n">UFN_CalculateArea</span><span class="p">(</span><span class="n">this_</span><span class="p">.</span><span class="n">Width</span><span class="p">,</span> <span class="n">this_</span><span class="p">.</span><span class="n">Height</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Other Tips</h2>
+
+<p>There are a few things worth noting here:</p>
+
+<h3>Registered methods need not be implemented in C#</h3>
+
+
+<p>We could actually decide not to provide an implementation for our <code>Area</code> property:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">Rectangle</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="nf">Rectangle</span><span class="p">(</span><span class="kt">double</span> <span class="n">width</span><span class="p">,</span> <span class="kt">double</span> <span class="n">height</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Width</span> <span class="p">=</span> <span class="n">width</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="n">Height</span> <span class="p">=</span> <span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">protected</span> <span class="nf">Rectangle</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">int</span> <span class="n">Id</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">double</span> <span class="n">Width</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">protected</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">double</span> <span class="n">Height</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">protected</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">virtual</span> <span class="kt">double</span> <span class="n">Area</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">get</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">NotImplementedException</span><span class="p">(</span><span class="s">&quot;Only available inside a QueryOver query&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>NHibernate will happily transform the <code>Area</code> property into the correct SQL as before&mdash;after all, it isn&rsquo;t actually <em>invoking</em> the property, it&rsquo;s evaluating it inside of an expression tree.</p>
+
+<p>Another example of where this might be useful is for functionality that&rsquo;s actually only available in SQL. Let&rsquo;s pick on the <code>checksum</code> function. If we wanted to use that inside of a QueryOver query, one way to do that would be to create a <code>CheckSum</code> extension method and register it (check <a href="../blog/2014/08/15/queryover-series-part-7-using-sql-functions">Using SQL Functions</a> for how to add the <code>checksum</code> function with a custom dialect):</p>
+
+<p>Here&rsquo;s our <code>CheckSum</code> method:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">QueryOverExtensions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">static</span> <span class="kt">int</span> <span class="nf">CheckSum</span><span class="p">(</span><span class="k">this</span> <span class="kt">object</span> <span class="n">o</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">throw</span> <span class="k">new</span> <span class="nf">NotImplementedException</span><span class="p">(</span><span class="s">&quot;Must be used inside of a QueryOver query.&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here&rsquo;s the <code>ProcessCheckSum</code> method that processes the <code>CheckSum</code> method call into an <code>IProjection</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">Extensions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">static</span> <span class="n">IProjection</span> <span class="nf">ProcessCheckSum</span><span class="p">(</span><span class="n">MethodCallExpression</span> <span class="n">methodCallExpression</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">IProjection</span> <span class="n">property</span> <span class="p">=</span>
+</span><span class='line'>            <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberProjection</span><span class="p">(</span>
+</span><span class='line'>                <span class="n">methodCallExpression</span><span class="p">.</span><span class="n">Arguments</span><span class="p">[</span><span class="m">0</span><span class="p">]).</span><span class="n">AsProjection</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Projections</span><span class="p">.</span><span class="n">SqlFunction</span><span class="p">(</span><span class="s">&quot;checksum&quot;</span><span class="p">,</span> <span class="n">NHibernateUtil</span><span class="p">.</span><span class="n">Int32</span><span class="p">,</span> <span class="n">property</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Finally, here&rsquo;s registering it with the <code>ExpressionProcessor</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">RegisterCustomProjection</span><span class="p">(</span>
+</span><span class='line'>    <span class="p">()</span> <span class="p">=&gt;</span> <span class="k">default</span><span class="p">(</span><span class="kt">object</span><span class="p">).</span><span class="n">CheckSum</span><span class="p">(),</span> <span class="n">Extensions</span><span class="p">.</span><span class="n">ProcessCheckSum</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here&rsquo;s an example of getting a <code>checksum</code> of <code>Rectangle.Height</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="kt">int</span> <span class="n">checksum</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">rct</span> <span class="p">=&gt;</span> <span class="n">rct</span><span class="p">.</span><span class="n">Height</span><span class="p">.</span><span class="n">CheckSum</span><span class="p">())</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SingleOrDefault</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Using multiple properties/columns in a function call</h3>
+
+<p>There isn&rsquo;t an example of this (that I can find) in the NHibernate code base, so I figured I&rsquo;d go ahead and provide one.</p>
+
+<p>Continuing with the <code>checksum</code> example above, what if we wanted to supply some additional columns to the <code>checksum</code> function? At this point it might be wiser to use the strategy outlined in Part 7, but lets expand the <code>CheckSum</code> extension method for the sake of an example.</p>
+
+<p>Here&rsquo;s how the extension method itself needs to change:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">QueryOverExtensions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">static</span> <span class="kt">int</span> <span class="nf">CheckSum</span><span class="p">(</span><span class="k">this</span> <span class="kt">object</span> <span class="n">o</span><span class="p">,</span> <span class="k">params</span> <span class="kt">object</span><span class="p">[]</span> <span class="n">additionalProperties</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">throw</span> <span class="k">new</span> <span class="nf">NotImplementedException</span><span class="p">(</span><span class="s">&quot;Must be used inside of a QueryOver query.&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note the use of <code>params</code>&mdash;we&rsquo;ve made it possible for the user of our method to supply as many additional properties as they&rsquo;d like.</p>
+
+<p>Here&rsquo;s the new implementation of <code>ProcessCheckSum</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IProjection</span> <span class="nf">ProcessCheckSum</span><span class="p">(</span><span class="n">MethodCallExpression</span> <span class="n">methodCallExpression</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="cm">/* Retrieve the property the extension method was called on as a projection */</span>
+</span><span class='line'>    <span class="n">IProjection</span> <span class="n">property</span> <span class="p">=</span>
+</span><span class='line'>        <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberProjection</span><span class="p">(</span><span class="n">methodCallExpression</span><span class="p">.</span><span class="n">Arguments</span><span class="p">[</span><span class="m">0</span><span class="p">])</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">AsProjection</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">projections</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">IProjection</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">property</span> <span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Process the array that&#39;s supplied as the second argument in the expression. */</span>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">additionalProperties</span> <span class="p">=</span> <span class="p">(</span><span class="n">NewArrayExpression</span><span class="p">)</span><span class="n">methodCallExpression</span><span class="p">.</span><span class="n">Arguments</span><span class="p">[</span><span class="m">1</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Convert each item in the array into a projection */</span>
+</span><span class='line'>    <span class="n">IEnumerable</span><span class="p">&lt;</span><span class="n">IProjection</span><span class="p">&gt;</span> <span class="n">additionalProjections</span> <span class="p">=</span>
+</span><span class='line'>        <span class="n">additionalProperties</span><span class="p">.</span><span class="n">Expressions</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">expr</span> <span class="p">=&gt;</span>
+</span><span class='line'>                <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberProjection</span><span class="p">(</span><span class="n">expr</span><span class="p">).</span><span class="n">AsProjection</span><span class="p">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* Combine the first projection and the additional ones */</span>
+</span><span class='line'>    <span class="n">projections</span><span class="p">.</span><span class="n">AddRange</span><span class="p">(</span><span class="n">additionalProjections</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">Projections</span><span class="p">.</span><span class="n">SqlFunction</span><span class="p">(</span>
+</span><span class='line'>        <span class="s">&quot;checksum&quot;</span><span class="p">,</span> <span class="n">NHibernateUtil</span><span class="p">.</span><span class="n">Int32</span><span class="p">,</span> <span class="n">projections</span><span class="p">.</span><span class="n">ToArray</span><span class="p">());</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The key here is to notice that <code>Arguments[1]</code> is of type <code>NewArrayExpression</code> (because of the second argument being and array). We need to take out the expressions <em>within</em> that array (that&rsquo;s what the LINQ block does) and then supply those projections to <code>Projections.SqlFunction</code>.</p>
+
+<p>Now we can call our extension method with more properties:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="kt">int</span> <span class="n">checksum</span> <span class="p">=</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Rectangle</span><span class="p">&gt;(()</span> <span class="p">=&gt;</span> <span class="n">rectAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">rct</span> <span class="p">=&gt;</span> <span class="n">rct</span><span class="p">.</span><span class="n">Height</span><span class="p">.</span><span class="n">CheckSum</span><span class="p">(</span><span class="n">rct</span><span class="p">.</span><span class="n">Width</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">SingleOrDefault</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that <code>rct.Width</code> could easily be a property referenced with an alias (e.g. <code>rectAlias.Width</code>), even one from another class.</p>
+
+<h2>Summary</h2>
+
+<p>Hopefully this post has been helpful in providing some useful strategies on how to get NHibernate to generate meaningful SQL from a QueryOver query, even when using unmapped properties or methods. Doing this could be hugely helpful when you have existing user-defined functions you need to call, or you&rsquo;d like to use a computed property inside of a query, rather than pull back every item in your table and then filter it.</p>
+
+<p>To summarize:</p>
+
+<ul>
+<li>Normally, unmapped properties are unavailable for querying inside of a QueryOver query, since NHibernate does not know how to translate the property into the correct SQL.</li>
+<li>You can tell NHibernate what to do with a method or property using the static <code>ExpressionProcessor</code> class and a method that returns an <code>IProjection</code> given an expression containing the method call.</li>
+<li>As long as you can represent the SQL you want to generate as some kind of <code>IProjection</code>, you can register any property or method with the <code>ExpressionProcessor</code>.</li>
+<li>You can create extension methods or properties that are only available for use inside of a QueryOver query.</li>
+<li>Methods can contain a provision for processing an arbitrary number of properties for inclusion in the SQL that&rsquo;s ultimately generated.</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Named Queries and Unmapped Types]]></title>
@@ -253,7 +953,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p><strong>3. Create a result transformer that can leverage that attribute:</strong></p>
+<p><strong>3. Create a result transformer that can leverage that attribute (based on <a href="https://github.com/nhibernate/nhibernate-core/blob/master/src/NHibernate/Transform/AliasToBeanResultTransformer.cs"><code>AliasToBeanResultTransformer</code></a>:</strong></p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
