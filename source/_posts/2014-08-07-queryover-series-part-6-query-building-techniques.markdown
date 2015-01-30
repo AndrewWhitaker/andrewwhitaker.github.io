@@ -3,11 +3,13 @@ layout: post
 title: "QueryOver Series - Part 6: Query Building Techniques"
 date: 2014-08-07 16:05:37 -0500
 comments: true
-categories: nhibernate
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 
 In this post, I'm going to explain some more advanced techniques for building queries with QueryOver. Practically, this means adding joins and where clauses dynamically. This is actually one of the most powerful abilities of QueryOver so it's worth understanding.
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
 
 To make this easier to explain, I'm going to use a simple example that I can build on throughout the post.
 

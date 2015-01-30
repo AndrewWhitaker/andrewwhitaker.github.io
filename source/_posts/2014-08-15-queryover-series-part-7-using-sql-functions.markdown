@@ -3,11 +3,13 @@ layout: post
 title: "QueryOver Series - Part 7: Using SQL Functions"
 date: 2014-08-15 14:46:35 -0500
 comments: true
-categories: nhibernate
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 
 In this post, I'll go over how to use functions built into the database engine. This can be useful when you want to do some work inside of your SQL query rather than do post-processing on the result set you get back.
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
 
 ## Dialects in NHibernate
 

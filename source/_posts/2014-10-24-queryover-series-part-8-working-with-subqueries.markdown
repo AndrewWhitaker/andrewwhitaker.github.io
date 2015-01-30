@@ -3,10 +3,12 @@ layout: post
 title: "QueryOver Series Part 8: Working with Subqueries"
 date: 2014-10-24 12:17:39 -0400
 comments: true
-categories: nhibernate
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 Subqueries are often extremely useful when building queries. Unfortunately there's not much out there on how to work with subqueries in QueryOver. In this post, I'll dive into how to create the subqueries using QueryOver's various subquery APIs.
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
 
 There are two places you can use subqueries in a QueryOver query: the `SELECT` clause and the `WHERE` clause. Unfortunately you cannot use a subquery in the `FROM` clause of a QueryOver query.
 

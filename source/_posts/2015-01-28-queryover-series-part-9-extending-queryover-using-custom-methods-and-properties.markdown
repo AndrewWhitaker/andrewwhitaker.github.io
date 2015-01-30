@@ -3,12 +3,14 @@ layout: post
 title: "QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties"
 date: 2015-01-28 19:05:39 -0600
 comments: true
-categories: [nhibernate, QueryOver Series]
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 
 A basic tenet of QueryOver queries is that you can't query against unmapped properties. While this is generally true, in this post I'll outline some strategies you can use to register properties and functions with QueryOver so that they generate meaningful SQL.
 
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
 
 ## Basics
 

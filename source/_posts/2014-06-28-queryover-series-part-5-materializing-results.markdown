@@ -3,11 +3,13 @@ layout: post
 title: "QueryOver Series - Part 5: Materializing Results"
 date: 2014-06-28 10:47:22 -0400
 comments: true
-categories: nhibernate
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 
 So far I've been using the `.List` or `.SingleOrDefault` methods to actually get results from a query. In this post I'll go into a little more detail about those methods. I'll also cover other ways you can materialize a query's results.
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
 
 ### `SingleOrDefault<T>` and `List<T>`
 

@@ -3,13 +3,16 @@ layout: post
 title: "QueryOver Series - Part 4: Transforming"
 date: 2014-06-19 17:51:00 -0500
 comments: true
-categories: nhibernate
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 
 You might have noticed that the last post in the series always projects each result row into an `object[]`. This might have made you wonder if there's a better way to get results from a QueryOver query. Well there is! It's called transforming.
 
 In the context of an NHibernate query, a *transformer* is simply a class that transforms each row from a query into an instance of an object. NHibernate comes with several and allows you to easily create a custom transformer if you'd like.
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
+
 Transformers are supplied to the `TransformUsing` function on an instance of `IQueryOver<TRoot, TSubtype>`. For example, here's how you would use `Transformers.DistinctRootEntity` (which I'll go into more detail later about):
 
 ```csharp

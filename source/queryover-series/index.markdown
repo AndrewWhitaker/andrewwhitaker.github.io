@@ -16,3 +16,4 @@ This is the index page for the blog post series on NHibernate's QueryOver API:
 6. [Query Building Techniques](../blog/2014/08/07/queryover-series-part-6-query-building-techniques/)
 7. [Using SQL Functions](../blog/2014/08/15/queryover-series-part-7-using-sql-functions)
 8. [Working with Subqueries](../blog/2014/10/24/queryover-series-part-8-working-with-subqueries/)
+9. [Extending QueryOver to Use Custom Methods and Properties](../blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/)

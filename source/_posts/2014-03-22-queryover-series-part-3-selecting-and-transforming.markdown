@@ -3,11 +3,14 @@ layout: post
 title: "QueryOver Series - Part 3: Selecting"
 date: 2014-03-22 11:01:46 -0400
 comments: true
-categories: nhibernate 
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 
 In this post I'll go over building the `SELECT` statement with NHibernate QueryOver. I'll also cover the different ways you can actually get a result back from your query.
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
+
 ### Selecting a single property
 
 In the simplest case, you'll want to select a single column from a single row. For example, if you wanted to retrieve a single `Product`'s `Name`:

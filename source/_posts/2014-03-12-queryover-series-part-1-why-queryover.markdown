@@ -3,13 +3,16 @@ layout: post
 title: "QueryOver Series - Part 1: Why QueryOver?"
 date: 2014-03-12 22:50:58 -0400
 comments: true
-categories: 
+categories: [NHibernate, QueryOver, QueryOver Series]
 ---
 
 QueryOver is a strongly-typed querying technology built on top of NHibernate's Criteria API. It was introduced in NHibernate 3.0. QueryOver is actually quite powerful and flexible, as I aim to demonstrate in this series of blog posts.
 
 There is not much in the way of official documentation for NHibernate in general, and even less for QueryOver. The only article on NHForge that I can find is [here](http://nhforge.org/blogs/nhibernate/archive/2009/12/17/queryover-in-nh-3-0.aspx). While this is a good read for an introduction, it really doesn't do QueryOver justice. There's a lot of capability that's not demonstrated there.
 <!-- more -->
+
+{% render_partial queryover-series/queryover_series_partial.markdown %}
+
 ### Overview of available querying technologies
 
 If you're using NHibernate, you're probably aware that you have several options when you go to write a query:
