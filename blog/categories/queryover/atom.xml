@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: QueryOver Series | Andrew Whitaker]]></title>
-  <link href="http://blog.andrewawhitaker.com/blog/categories/queryover-series/atom.xml" rel="self"/>
+  <title><![CDATA[Category: QueryOver | Andrew Whitaker]]></title>
+  <link href="http://blog.andrewawhitaker.com/blog/categories/queryover/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
   <updated>2015-01-29T19:51:29-06:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>

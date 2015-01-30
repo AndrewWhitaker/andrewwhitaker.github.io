@@ -4,7 +4,7 @@
   <title><![CDATA[Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2015-01-29T19:36:04-06:00</updated>
+  <updated>2015-01-29T19:51:29-06:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -22,6 +22,8 @@
 
 <!-- more -->
 
+
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
 
 <h2>Basics</h2>
 
@@ -1193,6 +1195,8 @@
 <!-- more -->
 
 
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
+
 <p>There are two places you can use subqueries in a QueryOver query: the <code>SELECT</code> clause and the <code>WHERE</code> clause. Unfortunately you cannot use a subquery in the <code>FROM</code> clause of a QueryOver query.</p>
 
 <h2>Subqueries in the <code>WHERE</code> clause</h2>
@@ -2002,6 +2006,8 @@
 <!-- more -->
 
 
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
+
 <h2>Dialects in NHibernate</h2>
 
 <p>To understand how to use and later build SQL functions, it&rsquo;s helpful to understand how the default SQL functions are registered with NHibernate to begin with.</p>
@@ -2594,6 +2600,8 @@
 <!-- more -->
 
 
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
+
 <p>To make this easier to explain, I&rsquo;m going to use a simple example that I can build on throughout the post.</p>
 
 <h2>The Problem</h2>
@@ -3171,6 +3179,8 @@
 <!-- more -->
 
 
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
+
 <h3><code>SingleOrDefault&lt;T&gt;</code> and <code>List&lt;T&gt;</code></h3>
 
 <p>These two are pretty self-explanatory. Calling <code>.List&lt;T&gt;</code> at the end of your query will immediately yield an <code>IList&lt;T&gt;</code>. For example:</p>
@@ -3428,6 +3438,8 @@
 
 <!-- more -->
 
+
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
 
 <p>Transformers are supplied to the <code>TransformUsing</code> function on an instance of <code>IQueryOver&lt;TRoot, TSubtype&gt;</code>. For example, here&rsquo;s how you would use <code>Transformers.DistinctRootEntity</code> (which I&rsquo;ll go into more detail later about):</p>
 
@@ -4020,6 +4032,8 @@
 <!-- more -->
 
 
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
+
 <h3>Selecting a single property</h3>
 
 <p>In the simplest case, you&rsquo;ll want to select a single column from a single row. For example, if you wanted to retrieve a single <code>Product</code>&rsquo;s <code>Name</code>:</p>
@@ -4503,6 +4517,8 @@
 <!-- more -->
 
 
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
+
 <h4><code>IQueryOver&lt;TRoot, TSubType&gt;</code></h4>
 
 <p>If you look closely at the types involved when writing QueryOver queries, you&rsquo;ll notice that there are two generic type parameters: <code>TRoot</code> and <code>TSubType</code>. Why would the API need two type parameters?</p>
@@ -4612,6 +4628,8 @@
 
 <!-- more -->
 
+
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="http://blog.andrewawhitaker.com/queryover-series">here</a> to see the table of contents.</em></p>
 
 <h3>Overview of available querying technologies</h3>
 
