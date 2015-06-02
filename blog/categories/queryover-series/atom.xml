@@ -4,7 +4,7 @@
   <title><![CDATA[Category: QueryOver Series | Andrew Whitaker]]></title>
   <link href="http://blog.andrewawhitaker.com/blog/categories/queryover-series/atom.xml" rel="self"/>
   <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2015-01-29T19:51:29-06:00</updated>
+  <updated>2015-06-01T20:12:44-05:00</updated>
   <id>http://blog.andrewawhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
@@ -12,6 +12,354 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[QueryOver Series - Part 10: Combining Criteria and QueryOver]]></title>
+    <link href="http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/"/>
+    <updated>2015-05-31T19:43:08-05:00</updated>
+    <id>http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover</id>
+    <content type="html"><![CDATA[<p>As I mentioned in the first post in this series, QueryOver is built on top of NHibernate&rsquo;s Criteria API. In this post, I&rsquo;ll explore how to mix QueryOver and Criteria functionality to enable powerful query building techniques.</p>
+
+<!-- more -->
+
+
+<p>*This article is part of an ongoing series on NHibernate Queryover. Click [here](/queryover-series) to see the table of contents.*</p>
+
+<h2>Building truly dynamic queries</h2>
+
+<p>If you&rsquo;ve read the article in this series about dynamically building queries, then you already know that with QueryOver you can conditionally add <code>WHERE</code> clauses and even <code>JOIN</code>s to a query without messy string manipulation. This functionality is very powerful and might be all you ever need. However, you can write even <em>more</em> flexible queries by combining QueryOver with Criteria.</p>
+
+<p>For example, lets say you&rsquo;re building a product searching application and you want to let users search on any attribute of the product they&rsquo;d like. You could start with a QueryOver query that looks like this:</p>
+
+<p>```csharp
+public static IList<Product> QueryProducts(ISession session, string column, string value)
+{</p>
+
+<pre><code>Expression&lt;Func&lt;Product, object&gt;&gt; propertyExpression = null;
+
+if (column == "Name")
+{
+    propertyExpression = pr =&gt; pr.Name;
+}
+else if (column == "Color")
+{
+    propertyExpression = pr =&gt; pr.Color;
+}
+
+return session.QueryOver&lt;Product&gt;()
+    .Where(Restrictions.Eq(Projections.Property&lt;Product&gt;(propertyExpression), value))
+    .List&lt;Product&gt;();
+</code></pre>
+
+<p>}
+```</p>
+
+<p>You&rsquo;ve probably noticed the problem. Since QueryOver works with <code>Expression</code>s, we have to figure out what the user typed, then build the appropriate expression. This is boring and ugly. Lets see if we can use Criteria&rsquo;s functionality to simplify things.</p>
+
+<h3>Simplifying things using Criteria</h3>
+
+<p>First it might be helpful to step back and remember what a Criteria query looks like. If we were writing the <code>QueryProducts</code> method with a Criteria query, we could write it like this:</p>
+
+<p>```csharp
+public static IList<Product> QueryProducts(ISession session, string column, string value)
+{</p>
+
+<pre><code>return session.CreateCriteria&lt;Product&gt;()
+    .Add(Restrictions.Eq(column, value))
+    .List&lt;Product&gt;();
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Here, we&rsquo;re passing the user&rsquo;s input directly to <code>Restrictions.Eq</code>.</p>
+
+<p>Before we go any further, I should mention that this does <em>not</em> open you to SQL injection. If you attempt to supply a value to <code>column</code> that is not a mapped column for the <code>Product</code> class, NHibernate throws an exception.</p>
+
+<p>That said, throwing an exception isn&rsquo;t the most user-friendly thing in the world. We&rsquo;ll look at some ways to help with that later on.</p>
+
+<h3>Combining QueryOver and Criteria</h3>
+
+<p>A combination of the two versions of <code>QueryProducts</code> gives us this:</p>
+
+<p>```csharp
+public static IList<Product> QueryProducts(ISession session, string column, string value)
+{</p>
+
+<pre><code>return session.QueryOver&lt;Product&gt;()
+    .Where(Restrictions.Eq(column, value))
+    .List&lt;Product&gt;();
+</code></pre>
+
+<p>}
+```</p>
+
+<p>That was pretty easy! But before you go committing that and introducing bugs you&rsquo;ll discover later on, there are two major pitfalls I need to address. Both problems are solved the same way, so I&rsquo;ll introduce the problems first.</p>
+
+<h4>Joining</h4>
+
+<p>So imagine <code>QueryProducts</code> has been running smoothly for a few months. Now, however, you&rsquo;d like to add to the query. You need to <code>JOIN</code> to the <code>TransactionHistory</code> table and only retrieve products that have been modified in the last 7 days (you don&rsquo;t want customers seeing old stock). No problem&mdash; you make the following modification:</p>
+
+<p>```csharp
+public static IList<Product> QueryProducts(ISession session, string column, string value)
+{</p>
+
+<pre><code>return session.QueryOver&lt;Product&gt;()
+    .JoinQueryOver(pr =&gt; pr.TransactionHistory)
+        .Where(tx =&gt; tx.ModifiedDate &gt; DateTime.Now.AddDays(-7))
+    .Where(Restrictions.Eq(column, value))
+    .List&lt;Product&gt;();
+</code></pre>
+
+<p>}
+```</p>
+
+<p>That was easy right? Well, if you were to run this, NHibernate would throw an exception:</p>
+
+<p>```
+  Message=could not resolve property: Color of: AdventureWorks.Entities.Production.TransactionHistory
+  Source=NHibernate
+  StackTrace:</p>
+
+<pre><code>   at NHibernate.Persister.Entity.AbstractPropertyMapping.ToType(String propertyName)
+   at NHibernate.Persister.Entity.AbstractEntityPersister.GetSubclassPropertyTableNumber(String propertyPath)
+   at NHibernate.Persister.Entity.BasicEntityPropertyMapping.ToColumns(String alias, String propertyName)
+   at NHibernate.Persister.Entity.AbstractEntityPersister.ToColumns(String alias, String propertyName)
+   at NHibernate.Loader.Criteria.CriteriaQueryTranslator.GetColumns(ICriteria subcriteria, String propertyName)
+   at NHibernate.Loader.Criteria.CriteriaQueryTranslator.GetColumnsUsingProjection(ICriteria subcriteria, String propertyName)
+   at NHibernate.Criterion.CriterionUtil.GetColumnNamesUsingPropertyName(ICriteriaQuery criteriaQuery, ICriteria criteria, String propertyName, Object value, ICriterion critertion)
+   at NHibernate.Criterion.CriterionUtil.GetColumnNamesForSimpleExpression(String propertyName, IProjection projection, ICriteriaQuery criteriaQuery, ICriteria criteria, IDictionary`2 enabledFilters, ICriterion criterion, Object value)
+   /* etc */
+</code></pre>
+
+<p>```</p>
+
+<p>What happened here? To understand we need to go back to the <a href="../blog/2014/03/16/queryover-series-part-2-basics/">Basics and Joining</a> article. When you use <code>JoinQueryOver</code>, you&rsquo;re changing the context of any <code>.Where</code> calls that follow to the table you&rsquo;ve joined on. After calling <code>JoinQueryOver</code>, NHibernate thinks that we&rsquo;re trying to access the <code>Color</code> property of <code>TransactionHistory</code>.</p>
+
+<p>You could just move the <code>.Where</code> call <em>before</em> the <code>JoinQueryOver</code> call, but this can be hard to keep track of with a big query. There&rsquo;s a more robust solution.</p>
+
+<h4>Aliases</h4>
+
+<p>Our simple <code>Product</code> query doesn&rsquo;t have this problem yet, but consider another query, this one starting at <code>TransactionHistory</code> and joining to <code>Product</code>:</p>
+
+<p>```csharp
+Product productAlias = null;</p>
+
+<p>session.QueryOver<TransactionHistory>()</p>
+
+<pre><code>.JoinAlias(tx =&gt; tx.Product, () =&gt; productAlias)
+.Where(Restrictions.Eq(column, value))
+.List();
+</code></pre>
+
+<p>```</p>
+
+<p>This query throws the same exception that the above query throws. You need some way to combine the supplied column name with the alias that you&rsquo;re supplying NHibernate. How can we solve these problems?</p>
+
+<h3>Incorporating aliases</h3>
+
+<p>The key to solving the problems is using aliases along with our dynamic column name. Again, this is easier using Criteria directly:</p>
+
+<p>```csharp
+session.CreateCriteria<TransactionHistory>()</p>
+
+<pre><code>.CreateAlias("Product", "productAlias")
+.Add(Restrictions.Eq("productAlias." + column, value))
+.List&lt;TransactionHistory&gt;();
+</code></pre>
+
+<p>```</p>
+
+<p>Here, when we join to the <code>Product</code> table, we&rsquo;re assigning an alias (<code>"productAlias"</code>), that we&rsquo;re using later to create a property access expression (in the form of a <code>string</code>) that NHibernate understands.</p>
+
+<p>We can use the same strategy with QueryOver, but it takes a few steps.</p>
+
+<h4>1. Determine the name of the alias we&rsquo;re using</h4>
+
+<p>Under the hood, NHibernate is going to turn the <code>Expression</code> we supply to <code>JoinAlias</code> into a <code>string</code> that gets used the same way that the alias name supplied to <code>CreateAlias</code> is used. If we can determine the name of the alias, we can prepend that to the property we&rsquo;re trying to access.</p>
+
+<p>To do this, we can use the <code>NHibernate.Impl.ExpressionProcessor</code> class:</p>
+
+<p>```csharp
+Product productAlias = null;</p>
+
+<p>Expression&lt;Func<Product>> productAliasExpression = () => productAlias;</p>
+
+<p>string productAliasName =</p>
+
+<pre><code>ExpressionProcessor.FindMemberExpression(productAliasExpression.Body);
+</code></pre>
+
+<p>```</p>
+
+<p>Now, we&rsquo;ll have the name of the alias in the form of a <code>string</code>. Note that we could just use the string <code>"productAlias"</code> here, but that doesn&rsquo;t stand up well to refactoring.</p>
+
+<h4>2. Combine the alias with the supplied property</h4>
+
+<p>The next step is easy: just combine the alias name with the property we&rsquo;re trying to query on:</p>
+
+<p>```csharp
+Product productAlias = null;</p>
+
+<p>Expression&lt;Func<Product>> productAliasExpr = () => productAlias;</p>
+
+<p>string productAliasName = ExpressionProcessor.FindMemberExpression(productAliasExpr.Body);</p>
+
+<p>session.QueryOver<TransactionHistory>()</p>
+
+<pre><code>.JoinAlias(tx =&gt; tx.Product, productAliasExpr)
+.Where(Restrictions.Eq(string.Format("{0}.{1}", productAliasName, column), value))
+.List();
+</code></pre>
+
+<p>```</p>
+
+<p>This is a little messy, so lets refactor the property access building code into a helper function:</p>
+
+<p>```csharp
+public static string BuildPropertyAccess<T>(Expression&lt;Func<T>> alias, string propertyName)
+{</p>
+
+<pre><code>string aliasName = ExpressionProcessor.FindMemberExpression(alias.Body);
+
+return string.Format("{0}.{1}", aliasName, propertyName);
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Now our query looks like this:</p>
+
+<p>```csharp
+Product productAlias = null;</p>
+
+<p>Expression&lt;Func<Product>> productAliasExpr = () => productAlias;</p>
+
+<p>session.QueryOver<TransactionHistory>()</p>
+
+<pre><code>.JoinAlias(tx =&gt; tx.Product, productAliasExpr)
+.Where(Restrictions.Eq(BuildPropertyAccess(productAliasExpr, column), value))
+.List();
+</code></pre>
+
+<p>```</p>
+
+<p>This also fixes the problem with the query performing the <code>JOIN</code> from earlier:</p>
+
+<p>```csharp
+public static IList<Product> QueryProducts(ISession session, string column, string value)
+{</p>
+
+<pre><code>Product productAlias = null;
+
+Expression&lt;Func&lt;Product&gt;&gt; productAliasExpr = () =&gt; productAlias;
+
+return session.QueryOver&lt;Product&gt;(productAliasExpr)
+    .JoinQueryOver(pr =&gt; pr.TransactionHistory)
+        .Where(tx =&gt; tx.ModifiedDate &gt; DateTime.Now.AddDays(-7))
+    .Where(Restrictions.Eq(BuildPropertyAccess(productAliasExpr, column), value))
+    .List&lt;Product&gt;();
+</code></pre>
+
+<p>}
+```</p>
+
+<p>The call to <code>session.QueryOver</code> also assigns an alias that we can use later to build the <code>Restriction</code> correctly.</p>
+
+<h3>Validating supplied property names</h3>
+
+<p>The last piece of this is to nicely be able to let the user know that they&rsquo;ve supplied an invalid property name.</p>
+
+<p>Using <a href="http://stackoverflow.com/a/856791/497356">this answer</a> as a guide, we can use the following method to determine if a given property name is mapped and queryable:</p>
+
+<p>```csharp
+public static bool IsMappedProperty<T>(string property, ISessionFactory sessionFactory)
+{</p>
+
+<pre><code>IClassMetadata metadata = sessionFactory.GetClassMetadata(typeof(T));
+
+return metadata.PropertyNames.Contains(property);
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Now we have a nice way to validate the user&rsquo;s input before attempting to query using it.</p>
+
+<p>With all that in mind, here&rsquo;s a complete(ish) demonstration:</p>
+
+<p>```csharp
+public static void Query(ISession session)
+{</p>
+
+<pre><code>Console.Write("Please enter a column to query on: ");
+string col = Console.ReadLine();
+
+Console.Write("Please enter a value to query for: ");
+string value = Console.ReadLine();
+
+if (IsMappedProperty&lt;Product&gt;(col, session.SessionFactory))
+{
+    QueryProducts(session, col, value);
+}
+else
+{
+    Console.WriteLine("Invalid property name.");
+}
+</code></pre>
+
+<p>}</p>
+
+<p>public static bool IsMappedProperty<T>(string property, ISessionFactory sessionFactory)
+{</p>
+
+<pre><code>IClassMetadata metadata = sessionFactory.GetClassMetadata(typeof(T));
+
+return metadata.PropertyNames.Contains(property);
+</code></pre>
+
+<p>}</p>
+
+<p>public static IList<Product> QueryProducts(ISession session, string column, string value)
+{</p>
+
+<pre><code>Product productAlias = null;
+
+Expression&lt;Func&lt;Product&gt;&gt; productAliasExpr = () =&gt; productAlias;
+
+return session.QueryOver&lt;Product&gt;(productAliasExpr)
+    .JoinQueryOver(pr =&gt; pr.TransactionHistory)
+        .Where(tx =&gt; tx.ModifiedDate &gt; DateTime.Now.AddDays(-7))
+    .Where(Restrictions.Eq(BuildPropertyAccess(productAliasExpr, column), value))
+    .List&lt;Product&gt;();
+</code></pre>
+
+<p>}</p>
+
+<p>public static string BuildPropertyAccess<T>(Expression&lt;Func<T>> alias, string propertyName)
+{</p>
+
+<pre><code>string aliasName = ExpressionProcessor.FindMemberExpression(alias.Body);
+
+return string.Format("{0}.{1}", aliasName, propertyName);
+</code></pre>
+
+<p>}
+```</p>
+
+<p>And that&rsquo;s it! It took awhile to get here, but hopefully you see some potential in this technique. Keep in mind that you&rsquo;re not limited to <code>Restrictions.Eq</code>. You can use this strategy with anything that works with an <code>IProjection</code>, as long as you build the projection properly. This includes building dynamic <code>SELECT</code> clauses, which would be an interesting application.</p>
+
+<h2>Summary</h2>
+
+<ul>
+<li>With a normal QueryOver query, it&rsquo;s hard to dynamically choose property names because QueryOver works with strongly-typed <code>Expression</code>s.</li>
+<li>We can mix QueryOver with Criteria to dynamically supply column names&hellip;</li>
+<li>&hellip; but we need to assign aliases to entities involved in the queries in order to generate the correct SQL.</li>
+<li>We can check for valid property names using the <code>GetClassMetadata</code> function on <code>ISessionFactory</code>.</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties]]></title>
@@ -1822,241 +2170,6 @@ ProductReview reviewAlias = null;</p>
 <li>Refactoring conditional restrictions and joins into extension methods can keep queries readable and refactor logic into reusable pieces.</li>
 <li>To make those extension methods as robust as possible, we can make the methods generic and therefore more flexible.</li>
 <li>Passing around aliases between methods when building QueryOver queries has some pitfalls and needs some special attention.</li>
-</ul>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[QueryOver Series - Part 5: Materializing Results]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/"/>
-    <updated>2014-06-28T09:47:22-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results</id>
-    <content type="html"><![CDATA[<p>So far I&rsquo;ve been using the <code>.List</code> or <code>.SingleOrDefault</code> methods to actually get results from a query. In this post I&rsquo;ll go into a little more detail about those methods. I&rsquo;ll also cover other ways you can materialize a query&rsquo;s results.</p>
-
-<!-- more -->
-
-
-<p>*This article is part of an ongoing series on NHibernate Queryover. Click [here](/queryover-series) to see the table of contents.*</p>
-
-<h3><code>SingleOrDefault&lt;T&gt;</code> and <code>List&lt;T&gt;</code></h3>
-
-<p>These two are pretty self-explanatory. Calling <code>.List&lt;T&gt;</code> at the end of your query will immediately yield an <code>IList&lt;T&gt;</code>. For example:</p>
-
-<p>```csharp
-IList<Employee> empl = session.QueryOver<Employee>()</p>
-
-<pre><code>.List&lt;Employee&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>Similarly, <code>SingleOrDefault&lt;T&gt;</code> will immediately give you a single item of type <code>T</code>, provided the query only returns one row. Otherwise, NHibernate will throw an exception telling you that the query did not return a unique result.</p>
-
-<h3><code>Future&lt;T&gt;</code> and <code>FutureValue&lt;T&gt;</code></h3>
-
-<p>These two are more interesting. <a href="http://ayende.com/blog/3979/nhibernate-futures">Ayende has discussed these in detail</a> with the Criteria API, but I don&rsquo;t think a blog series on QueryOver is really complete without mentioning them again. In NHibernate using these creates a &ldquo;MultiQuery&rdquo; or &ldquo;MultiCriteria&rdquo;, which just means that NHibernate is batching your queries into one round trip and deferring populating the results.</p>
-
-<h4><code>Future&lt;T&gt;</code></h4>
-
-<p>Calling <code>.Future&lt;T&gt;</code> on your query will return an <code>IEnumerable&lt;T&gt;</code> that will not be populated with results until one of the results or resultsets is needed. NHibernate will build up queries using <code>.Future&lt;T&gt;</code> or <code>.FutureValue&lt;T&gt;</code> until one of the &ldquo;future&rdquo; results are accessed.</p>
-
-<p>When the results are processed, NHibernate will send one request to the database containing the SQL for all of the &ldquo;future&rdquo; queries and populate the results accordingly. For example, lets say we were trying to display all <code>Employee</code>s and all <code>Product</code>s on the same page. We could just write two separate queries:</p>
-
-<p>```csharp
-// Get the list of employees first
-IList<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.List&lt;Employee&gt;();
-</code></pre>
-
-<p>// Then the list of products
-IList<Product> products = session.QueryOver<Product>()</p>
-
-<pre><code>.List&lt;Product&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>Which yields the following SQL:</p>
-
-<p>```sql</p>
-
-<pre><code>SELECT
-    this_.BusinessEntityID as Business1_0_1_,
-    -- More employee fields
-FROM
-    HumanResources.Employee this_
-</code></pre>
-
-<p><code>
-... And then a second query for the `Product`s:
-</code>sql</p>
-
-<pre><code>SELECT
-    this_.ProductID as ProductID7_0_
-    -- More product fields
-FROM
-    Production.Product this_
-</code></pre>
-
-<p><code>``
-This would work fine, but NHibernate is sending two separate queries to the database when we can accomplish getting those results with only one using</code>.Future<T>`:</p>
-
-<p>```csharp
-// Batch the two queries together
-IEnumerable<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.Future&lt;Employee&gt;();
-</code></pre>
-
-<p>IEnumerable<Product> products = session.QueryOver<Product>()</p>
-
-<pre><code>.Future&lt;Product&gt;();
-</code></pre>
-
-<p>// A single round trip to the database is made here containing both queries
-int numProducts = products.Count();
-```</p>
-
-<p>This generates a single database round trip with both queries when the <code>products.Count()</code> call forces NHibernate to process the <code>Product</code>s query:</p>
-
-<p>```sql
-&mdash; First query:
-SELECT</p>
-
-<pre><code>this_.BusinessEntityID as Business1_0_1_,
--- More Employee columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>HumanResources.Employee this_;
-</code></pre>
-
-<p>&mdash; Second query:
-SELECT</p>
-
-<pre><code>this_.ProductID as ProductID7_0_,
--- More product columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>Production.Product this_;
-</code></pre>
-
-<p>```</p>
-
-<p>This can be hugely helpful when querying from multiple sources that don&rsquo;t depend on each other.</p>
-
-<h4><code>FutureValue&lt;T&gt;</code></h4>
-
-<p>The same applies for <code>.FutureValue</code>, which is a deferred version of <code>.SingleOrDefault</code>.</p>
-
-<p>Lets say we wanted a list of all employees and the total number of products. Again, we could write two separate queries:</p>
-
-<p>```csharp
-IList<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.List&lt;Employee&gt;();
-</code></pre>
-
-<p>int productsCount = session.QueryOver<Product>()</p>
-
-<pre><code>.SelectList(list =&gt; list
-    .SelectCount(pr =&gt; pr.Id))
-.SingleOrDefault&lt;int&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>As you&rsquo;d expect, this will create two queries and two round-trips to the database:</p>
-
-<p>```sql
-SELECT</p>
-
-<pre><code>this_.BusinessEntityID as Business1_0_1_,
--- More Employee columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>HumanResources.Employee this_
-</code></pre>
-
-<p><code>
-... And then the `Product`s count query:
-</code>sql</p>
-
-<pre><code>SELECT
-    count(this_.ProductID) as y0_
-FROM
-    Production.Product this_
-</code></pre>
-
-<p>```</p>
-
-<p>We can turn this into one query by using <code>Future</code> and <code>FutureValue</code>:</p>
-
-<p>```csharp
-// Batch the two queries together
-IEnumerable<Employee> employees = session.QueryOver<Employee>()</p>
-
-<pre><code>.Future&lt;Employee&gt;();
-</code></pre>
-
-<p>IFutureValue<int> productsCount = session.QueryOver<Product>()</p>
-
-<pre><code>.SelectList(list =&gt; list
-    .SelectCount(pr =&gt; pr.Id))
-.FutureValue&lt;int&gt;();
-</code></pre>
-
-<p>// Access the &ldquo;Value&rdquo; property of IFutureValue, which will execute both queries in one round-trip
-Console.WriteLine(productsCount.Value);
-```</p>
-
-<p>Like our previous example with <code>.Future</code>, this will generate one round-trip to the database with two queries:</p>
-
-<p>```sql
-&mdash; First query:
-SELECT</p>
-
-<pre><code>this_.BusinessEntityID as Business1_0_1_,
--- More Employee Columns
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>HumanResources.Employee this_;
-</code></pre>
-
-<p>&mdash; Second query:
-SELECT</p>
-
-<pre><code>count(this_.ProductID) as y0_
-</code></pre>
-
-<p>FROM</p>
-
-<pre><code>Production.Product this_;
-</code></pre>
-
-<p>```</p>
-
-<p>Note the return type of the count query. <code>IFutureValue&lt;T&gt;</code> is simply a type that allows NHibernate to give you a deferred <code>SingleOrDefault</code> result. Accessing <code>.Value</code> (just like causing the <code>IEnumerable&lt;T&gt;</code> returned by <code>.Future</code>) will cause the batched queries to execute.</p>
-
-<p>I&rsquo;d highly recommend using <code>.Future</code> and <code>.FutureValue</code> where possible when you need to execute multiple queries at once. You&rsquo;ll save round trips to the database and therefore get results to your users faster.</p>
-
-<h3>Summary</h3>
-
-<p>This post covered different ways to materialize resultsets with NHibernate QueryOver.</p>
-
-<ul>
-<li><code>.SingleOrDefault</code> and <code>.List</code> immediately give you the results</li>
-<li><code>.FutureValue</code> and <code>.Future</code> batch queries and defer execution until one of the results in the batch is needed</li>
-<li><code>.FutureValue</code> and <code>.Future</code> use one round trip to the database instead of several, which is more efficient.</li>
 </ul>
 
 ]]></content>

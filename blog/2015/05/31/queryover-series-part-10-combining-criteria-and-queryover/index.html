@@ -1,0 +1,764 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>QueryOver Series - Part 10: Combining Criteria and QueryOver - Andrew Whitaker</title>
+  <meta name="author" content="Andrew Whitaker">
+
+  
+  <meta name="description" content="As I mentioned in the first post in this series, QueryOver is built on top of NHibernate&rsquo;s Criteria API. In this post, I&rsquo;ll explore how &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <link href="/atom.xml" rel="alternate" title="Andrew Whitaker" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Andrew Whitaker</a></h1>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.andrewawhitaker.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/queryover-series">QueryOver Series</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">QueryOver Series - Part 10: Combining Criteria and QueryOver</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-31T19:43:08-05:00" pubdate data-updated="true">May 31<span>st</span>, 2015</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>As I mentioned in the first post in this series, QueryOver is built on top of NHibernate&rsquo;s Criteria API. In this post, I&rsquo;ll explore how to mix QueryOver and Criteria functionality to enable powerful query building techniques.</p>
+
+<!-- more -->
+
+
+<p><em>This article is part of an ongoing series on NHibernate Queryover. Click <a href="/queryover-series">here</a> to see the table of contents.</em></p>
+
+<h2>Building truly dynamic queries</h2>
+
+<p>If you&rsquo;ve read the article in this series about dynamically building queries, then you already know that with QueryOver you can conditionally add <code>WHERE</code> clauses and even <code>JOIN</code>s to a query without messy string manipulation. This functionality is very powerful and might be all you ever need. However, you can write even <em>more</em> flexible queries by combining QueryOver with Criteria.</p>
+
+<p>For example, lets say you&rsquo;re building a product searching application and you want to let users search on any attribute of the product they&rsquo;d like. You could start with a QueryOver query that looks like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">QueryProducts</span><span class="p">(</span><span class="n">ISession</span> <span class="n">session</span><span class="p">,</span> <span class="kt">string</span> <span class="n">column</span><span class="p">,</span> <span class="kt">string</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">,</span> <span class="kt">object</span><span class="p">&gt;&gt;</span> <span class="n">propertyExpression</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">column</span> <span class="p">==</span> <span class="s">&quot;Name&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">propertyExpression</span> <span class="p">=</span> <span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Name</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">column</span> <span class="p">==</span> <span class="s">&quot;Color&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">propertyExpression</span> <span class="p">=</span> <span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">Color</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">Projections</span><span class="p">.</span><span class="n">Property</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(</span><span class="n">propertyExpression</span><span class="p">),</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You&rsquo;ve probably noticed the problem. Since QueryOver works with <code>Expression</code>s, we have to figure out what the user typed, then build the appropriate expression. This is boring and ugly. Lets see if we can use Criteria&rsquo;s functionality to simplify things.</p>
+
+<h3>Simplifying things using Criteria</h3>
+
+<p>First it might be helpful to step back and remember what a Criteria query looks like. If we were writing the <code>QueryProducts</code> method with a Criteria query, we could write it like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">QueryProducts</span><span class="p">(</span><span class="n">ISession</span> <span class="n">session</span><span class="p">,</span> <span class="kt">string</span> <span class="n">column</span><span class="p">,</span> <span class="kt">string</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">session</span><span class="p">.</span><span class="n">CreateCriteria</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here, we&rsquo;re passing the user&rsquo;s input directly to <code>Restrictions.Eq</code>.</p>
+
+<p>Before we go any further, I should mention that this does <em>not</em> open you to SQL injection. If you attempt to supply a value to <code>column</code> that is not a mapped column for the <code>Product</code> class, NHibernate throws an exception.</p>
+
+<p>That said, throwing an exception isn&rsquo;t the most user-friendly thing in the world. We&rsquo;ll look at some ways to help with that later on.</p>
+
+<h3>Combining QueryOver and Criteria</h3>
+
+<p>A combination of the two versions of <code>QueryProducts</code> gives us this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">QueryProducts</span><span class="p">(</span><span class="n">ISession</span> <span class="n">session</span><span class="p">,</span> <span class="kt">string</span> <span class="n">column</span><span class="p">,</span> <span class="kt">string</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That was pretty easy! But before you go committing that and introducing bugs you&rsquo;ll discover later on, there are two major pitfalls I need to address. Both problems are solved the same way, so I&rsquo;ll introduce the problems first.</p>
+
+<h4>Joining</h4>
+
+<p>So imagine <code>QueryProducts</code> has been running smoothly for a few months. Now, however, you&rsquo;d like to add to the query. You need to <code>JOIN</code> to the <code>TransactionHistory</code> table and only retrieve products that have been modified in the last 7 days (you don&rsquo;t want customers seeing old stock). No problem&mdash; you make the following modification:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">QueryProducts</span><span class="p">(</span><span class="n">ISession</span> <span class="n">session</span><span class="p">,</span> <span class="kt">string</span> <span class="n">column</span><span class="p">,</span> <span class="kt">string</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;()</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">TransactionHistory</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">ModifiedDate</span> <span class="p">&gt;</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">.</span><span class="n">AddDays</span><span class="p">(-</span><span class="m">7</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That was easy right? Well, if you were to run this, NHibernate would throw an exception:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'>  <span class="n">Message</span><span class="p">=</span><span class="n">could</span> <span class="n">not</span> <span class="n">resolve</span> <span class="n">property</span><span class="p">:</span> <span class="n">Color</span> <span class="n">of</span><span class="p">:</span> <span class="n">AdventureWorks</span><span class="p">.</span><span class="n">Entities</span><span class="p">.</span><span class="n">Production</span><span class="p">.</span><span class="n">TransactionHistory</span>
+</span><span class='line'>  <span class="n">Source</span><span class="p">=</span><span class="n">NHibernate</span>
+</span><span class='line'>  <span class="n">StackTrace</span><span class="p">:</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">AbstractPropertyMapping</span><span class="p">.</span><span class="n">ToType</span><span class="p">(</span><span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">AbstractEntityPersister</span><span class="p">.</span><span class="n">GetSubclassPropertyTableNumber</span><span class="p">(</span><span class="n">String</span> <span class="n">propertyPath</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">BasicEntityPropertyMapping</span><span class="p">.</span><span class="n">ToColumns</span><span class="p">(</span><span class="n">String</span> <span class="k">alias</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Persister</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">AbstractEntityPersister</span><span class="p">.</span><span class="n">ToColumns</span><span class="p">(</span><span class="n">String</span> <span class="k">alias</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Loader</span><span class="p">.</span><span class="n">Criteria</span><span class="p">.</span><span class="n">CriteriaQueryTranslator</span><span class="p">.</span><span class="n">GetColumns</span><span class="p">(</span><span class="n">ICriteria</span> <span class="n">subcriteria</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Loader</span><span class="p">.</span><span class="n">Criteria</span><span class="p">.</span><span class="n">CriteriaQueryTranslator</span><span class="p">.</span><span class="n">GetColumnsUsingProjection</span><span class="p">(</span><span class="n">ICriteria</span> <span class="n">subcriteria</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Criterion</span><span class="p">.</span><span class="n">CriterionUtil</span><span class="p">.</span><span class="n">GetColumnNamesUsingPropertyName</span><span class="p">(</span><span class="n">ICriteriaQuery</span> <span class="n">criteriaQuery</span><span class="p">,</span> <span class="n">ICriteria</span> <span class="n">criteria</span><span class="p">,</span> <span class="n">String</span> <span class="n">propertyName</span><span class="p">,</span> <span class="n">Object</span> <span class="k">value</span><span class="p">,</span> <span class="n">ICriterion</span> <span class="n">critertion</span><span class="p">)</span>
+</span><span class='line'>       <span class="n">at</span> <span class="n">NHibernate</span><span class="p">.</span><span class="n">Criterion</span><span class="p">.</span><span class="n">CriterionUtil</span><span class="p">.</span><span class="n">GetColumnNamesForSimpleExpression</span><span class="p">(</span><span class="n">String</span> <span class="n">propertyName</span><span class="p">,</span> <span class="n">IProjection</span> <span class="n">projection</span><span class="p">,</span> <span class="n">ICriteriaQuery</span> <span class="n">criteriaQuery</span><span class="p">,</span> <span class="n">ICriteria</span> <span class="n">criteria</span><span class="p">,</span> <span class="n">IDictionary</span><span class="err">`</span><span class="m">2</span> <span class="n">enabledFilters</span><span class="p">,</span> <span class="n">ICriterion</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">Object</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'>       <span class="cm">/* etc */</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>What happened here? To understand we need to go back to the <a href="../blog/2014/03/16/queryover-series-part-2-basics/">Basics and Joining</a> article. When you use <code>JoinQueryOver</code>, you&rsquo;re changing the context of any <code>.Where</code> calls that follow to the table you&rsquo;ve joined on. After calling <code>JoinQueryOver</code>, NHibernate thinks that we&rsquo;re trying to access the <code>Color</code> property of <code>TransactionHistory</code>.</p>
+
+<p>You could just move the <code>.Where</code> call <em>before</em> the <code>JoinQueryOver</code> call, but this can be hard to keep track of with a big query. There&rsquo;s a more robust solution.</p>
+
+<h4>Aliases</h4>
+
+<p>Our simple <code>Product</code> query doesn&rsquo;t have this problem yet, but consider another query, this one starting at <code>TransactionHistory</code> and joining to <code>Product</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinAlias</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This query throws the same exception that the above query throws. You need some way to combine the supplied column name with the alias that you&rsquo;re supplying NHibernate. How can we solve these problems?</p>
+
+<h3>Incorporating aliases</h3>
+
+<p>The key to solving the problems is using aliases along with our dynamic column name. Again, this is easier using Criteria directly:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">CreateCriteria</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">CreateAlias</span><span class="p">(</span><span class="s">&quot;Product&quot;</span><span class="p">,</span> <span class="s">&quot;productAlias&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="s">&quot;productAlias.&quot;</span> <span class="p">+</span> <span class="n">column</span><span class="p">,</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here, when we join to the <code>Product</code> table, we&rsquo;re assigning an alias (<code>"productAlias"</code>), that we&rsquo;re using later to create a property access expression (in the form of a <code>string</code>) that NHibernate understands.</p>
+
+<p>We can use the same strategy with QueryOver, but it takes a few steps.</p>
+
+<h4>1. Determine the name of the alias we&rsquo;re using</h4>
+
+<p>Under the hood, NHibernate is going to turn the <code>Expression</code> we supply to <code>JoinAlias</code> into a <code>string</code> that gets used the same way that the alias name supplied to <code>CreateAlias</code> is used. If we can determine the name of the alias, we can prepend that to the property we&rsquo;re trying to access.</p>
+
+<p>To do this, we can use the <code>NHibernate.Impl.ExpressionProcessor</code> class:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;&gt;</span> <span class="n">productAliasExpression</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">string</span> <span class="n">productAliasName</span> <span class="p">=</span>
+</span><span class='line'>    <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">productAliasExpression</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, we&rsquo;ll have the name of the alias in the form of a <code>string</code>. Note that we could just use the string <code>"productAlias"</code> here, but that doesn&rsquo;t stand up well to refactoring.</p>
+
+<h4>2. Combine the alias with the supplied property</h4>
+
+<p>The next step is easy: just combine the alias name with the property we&rsquo;re trying to query on:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;&gt;</span> <span class="n">productAliasExpr</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">string</span> <span class="n">productAliasName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="n">productAliasExpr</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinAlias</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">,</span> <span class="n">productAliasExpr</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;{0}.{1}&quot;</span><span class="p">,</span> <span class="n">productAliasName</span><span class="p">,</span> <span class="n">column</span><span class="p">),</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is a little messy, so lets refactor the property access building code into a helper function:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="kt">string</span> <span class="n">BuildPropertyAccess</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="k">alias</span><span class="p">,</span> <span class="kt">string</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">string</span> <span class="n">aliasName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="k">alias</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="kt">string</span><span class="p">.</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;{0}.{1}&quot;</span><span class="p">,</span> <span class="n">aliasName</span><span class="p">,</span> <span class="n">propertyName</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now our query looks like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;&gt;</span> <span class="n">productAliasExpr</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">TransactionHistory</span><span class="p">&gt;()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">JoinAlias</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">Product</span><span class="p">,</span> <span class="n">productAliasExpr</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">BuildPropertyAccess</span><span class="p">(</span><span class="n">productAliasExpr</span><span class="p">,</span> <span class="n">column</span><span class="p">),</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">List</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This also fixes the problem with the query performing the <code>JOIN</code> from earlier:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">QueryProducts</span><span class="p">(</span><span class="n">ISession</span> <span class="n">session</span><span class="p">,</span> <span class="kt">string</span> <span class="n">column</span><span class="p">,</span> <span class="kt">string</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;&gt;</span> <span class="n">productAliasExpr</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(</span><span class="n">productAliasExpr</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">TransactionHistory</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">ModifiedDate</span> <span class="p">&gt;</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">.</span><span class="n">AddDays</span><span class="p">(-</span><span class="m">7</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">BuildPropertyAccess</span><span class="p">(</span><span class="n">productAliasExpr</span><span class="p">,</span> <span class="n">column</span><span class="p">),</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The call to <code>session.QueryOver</code> also assigns an alias that we can use later to build the <code>Restriction</code> correctly.</p>
+
+<h3>Validating supplied property names</h3>
+
+<p>The last piece of this is to nicely be able to let the user know that they&rsquo;ve supplied an invalid property name.</p>
+
+<p>Using <a href="http://stackoverflow.com/a/856791/497356">this answer</a> as a guide, we can use the following method to determine if a given property name is mapped and queryable:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="kt">bool</span> <span class="n">IsMappedProperty</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">property</span><span class="p">,</span> <span class="n">ISessionFactory</span> <span class="n">sessionFactory</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">IClassMetadata</span> <span class="n">metadata</span> <span class="p">=</span> <span class="n">sessionFactory</span><span class="p">.</span><span class="n">GetClassMetadata</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">T</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">metadata</span><span class="p">.</span><span class="n">PropertyNames</span><span class="p">.</span><span class="n">Contains</span><span class="p">(</span><span class="n">property</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now we have a nice way to validate the user&rsquo;s input before attempting to query using it.</p>
+
+<p>With all that in mind, here&rsquo;s a complete(ish) demonstration:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="nf">Query</span><span class="p">(</span><span class="n">ISession</span> <span class="n">session</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="s">&quot;Please enter a column to query on: &quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">string</span> <span class="n">col</span> <span class="p">=</span> <span class="n">Console</span><span class="p">.</span><span class="n">ReadLine</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Console</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="s">&quot;Please enter a value to query for: &quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">string</span> <span class="k">value</span> <span class="p">=</span> <span class="n">Console</span><span class="p">.</span><span class="n">ReadLine</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">IsMappedProperty</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(</span><span class="n">col</span><span class="p">,</span> <span class="n">session</span><span class="p">.</span><span class="n">SessionFactory</span><span class="p">))</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">QueryProducts</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&quot;Invalid property name.&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="kt">bool</span> <span class="n">IsMappedProperty</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">property</span><span class="p">,</span> <span class="n">ISessionFactory</span> <span class="n">sessionFactory</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">IClassMetadata</span> <span class="n">metadata</span> <span class="p">=</span> <span class="n">sessionFactory</span><span class="p">.</span><span class="n">GetClassMetadata</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">T</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">metadata</span><span class="p">.</span><span class="n">PropertyNames</span><span class="p">.</span><span class="n">Contains</span><span class="p">(</span><span class="n">property</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;</span> <span class="n">QueryProducts</span><span class="p">(</span><span class="n">ISession</span> <span class="n">session</span><span class="p">,</span> <span class="kt">string</span> <span class="n">column</span><span class="p">,</span> <span class="kt">string</span> <span class="k">value</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Product</span> <span class="n">productAlias</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;&gt;</span> <span class="n">productAliasExpr</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">productAlias</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">session</span><span class="p">.</span><span class="n">QueryOver</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;(</span><span class="n">productAliasExpr</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">JoinQueryOver</span><span class="p">(</span><span class="n">pr</span> <span class="p">=&gt;</span> <span class="n">pr</span><span class="p">.</span><span class="n">TransactionHistory</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">tx</span> <span class="p">=&gt;</span> <span class="n">tx</span><span class="p">.</span><span class="n">ModifiedDate</span> <span class="p">&gt;</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">.</span><span class="n">AddDays</span><span class="p">(-</span><span class="m">7</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">Restrictions</span><span class="p">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">BuildPropertyAccess</span><span class="p">(</span><span class="n">productAliasExpr</span><span class="p">,</span> <span class="n">column</span><span class="p">),</span> <span class="k">value</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">List</span><span class="p">&lt;</span><span class="n">Product</span><span class="p">&gt;();</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="kt">string</span> <span class="n">BuildPropertyAccess</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">Expression</span><span class="p">&lt;</span><span class="n">Func</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="k">alias</span><span class="p">,</span> <span class="kt">string</span> <span class="n">propertyName</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">string</span> <span class="n">aliasName</span> <span class="p">=</span> <span class="n">ExpressionProcessor</span><span class="p">.</span><span class="n">FindMemberExpression</span><span class="p">(</span><span class="k">alias</span><span class="p">.</span><span class="n">Body</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="kt">string</span><span class="p">.</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;{0}.{1}&quot;</span><span class="p">,</span> <span class="n">aliasName</span><span class="p">,</span> <span class="n">propertyName</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And that&rsquo;s it! It took awhile to get here, but hopefully you see some potential in this technique. Keep in mind that you&rsquo;re not limited to <code>Restrictions.Eq</code>. You can use this strategy with anything that works with an <code>IProjection</code>, as long as you build the projection properly. This includes building dynamic <code>SELECT</code> clauses, which would be an interesting application.</p>
+
+<h2>Summary</h2>
+
+<ul>
+<li>With a normal QueryOver query, it&rsquo;s hard to dynamically choose property names because QueryOver works with strongly-typed <code>Expression</code>s.</li>
+<li>We can mix QueryOver with Criteria to dynamically supply column names&hellip;</li>
+<li>&hellip; but we need to assign aliases to entities involved in the queries in order to generate the correct SQL.</li>
+<li>We can check for valid property names using the <code>GetClassMetadata</code> function on <code>ISessionFactory</code>.</li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Andrew Whitaker</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-31T19:43:08-05:00" pubdate data-updated="true">May 31<span>st</span>, 2015</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/nhibernate/'>NHibernate</a>, <a class='category' href='/blog/categories/queryover/'>QueryOver</a>, <a class='category' href='/blog/categories/queryover-series/'>QueryOver Series</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/" title="Previous Post: QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties">&laquo; QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/">QueryOver Series - Part 10: Combining Criteria and QueryOver</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/">QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/26/named-queries-and-unmapped-types/">Named Queries and Unmapped Types</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/24/queryover-series-part-8-working-with-subqueries/">QueryOver Series Part 8: Working with Subqueries</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/">Getting NHibernate Up and Running Quickly</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+<section>
+  <h1>Stack Overflow</h1>
+  <a style="text-decoration:none;" href="http://stackoverflow.com/users/497356/andrew-whitaker">
+    <img src="http://stackoverflow.com/users/flair/497356.png" width="208" height="58" alt="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for andrew-whitaker at Stack Overflow, Q&amp;A for professional and enthusiast programmers">
+  </a>
+  <h2>Recent Answers:</h2> 
+  <ul id="stackoverflow-answers">
+  </ul>
+</section>
+<style>
+#stackoverflow-answers > li {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+#stackoverflow-answers > li > .score {
+    margin-right: 5px;
+    padding: 3px 6px 6px 6px;
+}
+
+#stackoverflow-answers > li > .accepted {
+    color: #ffffff;
+    background-color: #21759b;
+}
+
+#stackoverflow-answers > li > a {
+    white-space: nowrap;
+}
+</style>
+<script type="text/javascript">
+(function ($) {
+    var answersUrl = 'http://api.stackexchange.com/2.2/users/' + 497356 + '/answers'
+        , questionsUrl = 'http://api.stackexchange.com/2.2/answers/{ids}/questions';
+    
+    function makeRequest(url, options) {
+        return $.ajax({
+            url: url,
+            data: $.extend({
+                site: 'stackoverflow'
+            }, options)
+        });
+    }
+    
+    function getAnswers() {
+        return makeRequest(answersUrl, {
+            pagesize: 5,
+            order: 'desc',
+            site: 'stackoverflow',
+            sort: 'creation',
+            filter: '!9WgJfoIGL'
+        });
+    }
+
+    function getQuestions(answerData) {
+        var questionsDeferred = $.Deferred()
+        , answerItems = answerData.items
+        , answerIds = $.map(answerItems, function (answer) {
+            return answer.answer_id;
+        }).join(';');
+        
+        makeRequest(questionsUrl.replace("{ids}", answerIds))
+        .done(function (data) {
+            questionsDeferred.resolve(data, answerItems);
+        });
+        
+        return questionsDeferred;
+    }
+    
+    function processQuestions(questionData, answers) {
+        var listItems;
+    
+        $.each(questionData.items, function (_, question) {
+            var answer = $.grep(answers, function (ans) {
+                return ans.question_id === question.question_id;
+            })[0];
+                        
+            answer.title = question.title;
+        });
+
+        listItems = $.map(answers, function (answer) {
+            var score = '<span class="score ' + (answer.is_accepted ? 'accepted' : '') + '">' + answer.score + '</span>'
+                , link = '<a href="' + answer.link + '">' + answer.title + '</a>';
+                
+            return '<li>' + score + link + '</li>';
+        }).join('');
+
+        $('#stackoverflow-answers').html(listItems);    
+    }    
+        
+    getAnswers()
+        .then(getQuestions)
+        .done(processQuestions);
+    
+})(jQuery);
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Andrew Whitaker -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+  - <span class="credit">Theme by <a href="http://www.gehaxelt.in">Gehaxelt</a></span>
+  <span class="credit">and <a href="http://www.it-solutions-neef.de">IT Solutions Neef</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'andrewwhitaker';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/';
+        var disqus_url = 'http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
