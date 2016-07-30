@@ -2,110 +2,108 @@
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow/
+            http://www.andrewwhitaker.com/blog/2011/11/12/retrospective-1-year-of-stackoverflow/
         </loc>
-        <lastmod>2014-06-20T19:27:35-05:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/
+            http://www.andrewwhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/
         </loc>
-        <lastmod>2014-06-20T19:26:56-05:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/
+            http://www.andrewwhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/
         </loc>
-        <lastmod>2014-06-20T19:26:30-05:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/</loc>
-        <lastmod>2014-06-20T19:26:11-05:00</lastmod>
+        <loc>http://www.andrewwhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/</loc>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover/
+            http://www.andrewwhitaker.com/blog/2014/03/12/queryover-series-part-1-why-queryover/
         </loc>
-        <lastmod>2015-01-29T19:49:41-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.andrewawhitaker.com/blog/2014/03/16/queryover-series-part-2-basics/</loc>
-        <lastmod>2015-01-29T19:50:05-06:00</lastmod>
+        <loc>http://www.andrewwhitaker.com/blog/2014/03/16/queryover-series-part-2-basics/</loc>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/
+            http://www.andrewwhitaker.com/blog/2014/03/22/queryover-series-part-3-selecting-and-transforming/
         </loc>
-        <lastmod>2015-01-29T19:50:15-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming/
+            http://www.andrewwhitaker.com/blog/2014/06/19/queryover-series-part-4-transforming/
         </loc>
-        <lastmod>2015-01-29T19:50:20-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/
+            http://www.andrewwhitaker.com/blog/2014/06/28/queryover-series-part-5-materializing-results/
         </loc>
-        <lastmod>2015-01-29T19:50:22-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques/
+            http://www.andrewwhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques/
         </loc>
-        <lastmod>2015-01-29T19:50:25-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions/
+            http://www.andrewwhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions/
         </loc>
-        <lastmod>2015-01-29T19:50:29-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/
+            http://www.andrewwhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/
         </loc>
-        <lastmod>2014-08-28T11:40:26-05:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries/
+            http://www.andrewwhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries/
         </loc>
-        <lastmod>2015-01-29T19:50:33-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://www.andrewwhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types/</loc>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types/
+            http://www.andrewwhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/
         </loc>
-        <lastmod>2014-10-26T17:45:01-05:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.andrewawhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/
+            http://www.andrewwhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/
         </loc>
-        <lastmod>2015-01-29T19:49:53-06:00</lastmod>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
-        <loc>
-            http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/
-        </loc>
-        <lastmod>2015-06-01T20:08:23-05:00</lastmod>
+        <loc>http://www.andrewwhitaker.com/robots.txt</loc>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.andrewawhitaker.com/blog/archives/</loc>
-        <lastmod>2015-06-01T20:08:23-05:00</lastmod>
+        <loc>http://www.andrewwhitaker.com/blog/archives/</loc>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.andrewawhitaker.com/</loc>
-        <lastmod>2015-06-01T20:08:23-05:00</lastmod>
+        <loc>http://www.andrewwhitaker.com/</loc>
+        <lastmod>2016-07-10T17:41:15-05:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.andrewawhitaker.com/queryover-series/</loc>
-        <lastmod>2015-01-29T19:45:56-06:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.andrewawhitaker.com/robots.txt</loc>
-        <lastmod>2014-03-12T21:37:24-05:00</lastmod>
+        <loc>http://www.andrewwhitaker.com/queryover-series/</loc>
+        <lastmod>2016-07-30T17:12:29-05:00</lastmod>
     </url>
 </urlset>

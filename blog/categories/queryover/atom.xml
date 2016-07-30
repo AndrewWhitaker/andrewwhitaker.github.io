@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: QueryOver | Andrew Whitaker]]></title>
-  <link href="http://blog.andrewawhitaker.com/blog/categories/queryover/atom.xml" rel="self"/>
-  <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2015-06-01T20:12:44-05:00</updated>
-  <id>http://blog.andrewawhitaker.com/</id>
+  <link href="http://www.andrewwhitaker.com/blog/categories/queryover/atom.xml" rel="self"/>
+  <link href="http://www.andrewwhitaker.com/"/>
+  <updated>2016-07-30T17:20:12-05:00</updated>
+  <id>http://www.andrewwhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 10: Combining Criteria and QueryOver]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover/"/>
     <updated>2015-05-31T19:43:08-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover</id>
+    <id>http://www.andrewwhitaker.com/blog/2015/05/31/queryover-series-part-10-combining-criteria-and-queryover</id>
     <content type="html"><![CDATA[<p>As I mentioned in the first post in this series, QueryOver is built on top of NHibernate&rsquo;s Criteria API. In this post, I&rsquo;ll explore how to mix QueryOver and Criteria functionality to enable powerful query building techniques.</p>
 
 <!-- more -->
@@ -363,9 +363,9 @@ return string.Format("{0}.{1}", aliasName, propertyName);
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 9: Extending QueryOver to Use Custom Methods and Properties]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties/"/>
     <updated>2015-01-28T19:05:39-06:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties</id>
+    <id>http://www.andrewwhitaker.com/blog/2015/01/28/queryover-series-part-9-extending-queryover-using-custom-methods-and-properties</id>
     <content type="html"><![CDATA[<p>A basic tenet of QueryOver queries is that you can&rsquo;t query against unmapped properties. While this is generally true, in this post I&rsquo;ll outline some strategies you can use to register properties and functions with QueryOver so that they generate meaningful SQL.</p>
 
 <!-- more -->
@@ -877,9 +877,9 @@ int checksum = session.QueryOver<Rectangle>(() => rectAlias)</p>
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series Part 8: Working with Subqueries]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries/"/>
     <updated>2014-10-24T11:17:39-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries</id>
+    <id>http://www.andrewwhitaker.com/blog/2014/10/24/queryover-series-part-8-working-with-subqueries</id>
     <content type="html"><![CDATA[<p>Subqueries are often extremely useful when building queries. Unfortunately there&rsquo;s not much out there on how to work with subqueries in QueryOver. In this post, I&rsquo;ll dive into how to create the subqueries using QueryOver&rsquo;s various subquery APIs.</p>
 
 <!-- more -->
@@ -1245,9 +1245,9 @@ session.QueryOver<Product>(() => productAlias)</p>
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 7: Using SQL Functions]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions/"/>
     <updated>2014-08-15T14:46:35-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions</id>
+    <id>http://www.andrewwhitaker.com/blog/2014/08/15/queryover-series-part-7-using-sql-functions</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;ll go over how to use functions built into the database engine. This can be useful when you want to do some work inside of your SQL query rather than do post-processing on the result set you get back.</p>
 
 <!-- more -->
@@ -1721,9 +1721,9 @@ private static ISQLFunction GetDateDiffFunction(string datepart)
   
   <entry>
     <title type="html"><![CDATA[QueryOver Series - Part 6: Query Building Techniques]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques/"/>
     <updated>2014-08-07T16:05:37-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques</id>
+    <id>http://www.andrewwhitaker.com/blog/2014/08/07/queryover-series-part-6-query-building-techniques</id>
     <content type="html"><![CDATA[<p>In this post, I&rsquo;m going to explain some more advanced techniques for building queries with QueryOver. Practically, this means adding joins and where clauses dynamically. This is actually one of the most powerful abilities of QueryOver so it&rsquo;s worth understanding.</p>
 
 <!-- more -->

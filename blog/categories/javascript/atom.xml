@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: JavaScript | Andrew Whitaker]]></title>
-  <link href="http://blog.andrewawhitaker.com/blog/categories/javascript/atom.xml" rel="self"/>
-  <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2015-06-01T20:12:44-05:00</updated>
-  <id>http://blog.andrewawhitaker.com/</id>
+  <link href="http://www.andrewwhitaker.com/blog/categories/javascript/atom.xml" rel="self"/>
+  <link href="http://www.andrewwhitaker.com/"/>
+  <updated>2016-07-30T17:20:12-05:00</updated>
+  <id>http://www.andrewwhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[jQueryUI Autocomplete 1.9]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9/"/>
     <updated>2012-10-08T20:37:33-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9</id>
+    <id>http://www.andrewwhitaker.com/blog/2012/10/08/jqueryui-autocomplete-1-9</id>
     <content type="html"><![CDATA[<p>As you might have realized from my previous post, I have an affinity for the jQueryUI autocomplete widget. With 1.9, which was <a href="http://jqueryui.com/changelog/1.9.0/">recently released</a>, autocomplete <a href="http://jqueryui.com/upgrade-guide/1.9/#autocomplete">got a little love</a>, which is what I&rsquo;ll focus on in this post. I&rsquo;ll go over each change and what practical implications it has.</p>
 
 <!-- more -->
@@ -167,9 +167,9 @@ $("#auto").autocomplete({
   
   <entry>
     <title type="html"><![CDATA[jQueryUI Autocomplete: Top 5 sources of confusion]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion/"/>
     <updated>2012-09-29T13:31:58-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
+    <id>http://www.andrewwhitaker.com/blog/2012/09/29/jqueryui-autocomplete-top-5-sources-of-confusion</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve been answering <a href="http://www.jqueryui.com/demos/autocomplete">jQueryUI autocomplete</a> questions on StackOverflow now for over two and a half years and I&rsquo;ve noticed that there are a few things that are <em>always</em> coming up. This post will attempt to clear up those sources of confusion.</p>
 
 <!-- more -->
@@ -363,9 +363,9 @@ function split(val) {</p>
   
   <entry>
     <title type="html"><![CDATA[jQuery.aggregate: A simple jQuery aggregation plugin]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin/"/>
     <updated>2011-12-22T17:39:02-06:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
+    <id>http://www.andrewwhitaker.com/blog/2011/12/22/jquery-aggregate-a-simple-jquery-aggregation-plugin</id>
     <content type="html"><![CDATA[<p>I&rsquo;ve found myself needing to apply an aggregate function over a jQuery object several times. I decided to wrap the functionality in a plugin. I attempted to make <code>$.aggregate</code> and its little brother <code>$.sum</code> as close to LINQ&rsquo;s <a href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.aggregate.aspx">aggregate</a> and <a href="http://msdn.microsoft.com/en-us/library/bb345537.aspx">sum</a> as possible. This goal obviously couldn&rsquo;t be completely realized because of the dynamic nature of JavaScript. The biggest roadblock there is that you can&rsquo;t really imply a &ldquo;seed&rdquo; value for an aggregating operation, since arrays can contain elements of various types in JavaScript.</p>
 
 <!-- more -->

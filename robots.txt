@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: 
 
-Sitemap: http://blog.andrewawhitaker.com/sitemap.xml 
+Sitemap: http://www.andrewwhitaker.com/sitemap.xml 

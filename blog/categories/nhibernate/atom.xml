@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: nhibernate | Andrew Whitaker]]></title>
-  <link href="http://blog.andrewawhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
-  <link href="http://blog.andrewawhitaker.com/"/>
-  <updated>2015-06-01T20:12:44-05:00</updated>
-  <id>http://blog.andrewawhitaker.com/</id>
+  <link href="http://www.andrewwhitaker.com/blog/categories/nhibernate/atom.xml" rel="self"/>
+  <link href="http://www.andrewwhitaker.com/"/>
+  <updated>2016-07-30T17:20:12-05:00</updated>
+  <id>http://www.andrewwhitaker.com/</id>
   <author>
     <name><![CDATA[Andrew Whitaker]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Named Queries and Unmapped Types]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types/"/>
     <updated>2014-10-26T16:38:35-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types</id>
+    <id>http://www.andrewwhitaker.com/blog/2014/10/26/named-queries-and-unmapped-types</id>
     <content type="html"><![CDATA[<p><em>This post was inspired by <a href="http://stackoverflow.com/q/26512930/497356">this StackOverflow question</a></em>.</p>
 
 <p>Named queries are extremely useful in a variety of situations when you&rsquo;re using NHibernate. If you want to use dialect-specific features that aren&rsquo;t supported in NHibernate, you&rsquo;re practically forced to go this route.</p>
@@ -327,9 +327,9 @@ var products = session.GetNamedQuery(&ldquo;Products_GetAll&rdquo;)</p>
   
   <entry>
     <title type="html"><![CDATA[Getting NHibernate Up and Running Quickly]]></title>
-    <link href="http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/"/>
+    <link href="http://www.andrewwhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly/"/>
     <updated>2014-08-28T10:44:06-05:00</updated>
-    <id>http://blog.andrewawhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly</id>
+    <id>http://www.andrewwhitaker.com/blog/2014/08/28/getting-nhibernate-up-and-running-quickly</id>
     <content type="html"><![CDATA[<p>NHibernate can seem like a daunting library to set up. The configuration can get quite complicated&mdash;XML mappings, code mappings, mapping conventions, dialects, logging, etc. Sometimes you just want to get something up and running to test out a query or play around with a database other than your primary one. In this post, I&rsquo;ll show you how to get up and running with NHibernate in about 5 minutes and in around 50 lines of code in <a href="http://www.linqpad.net">LINQPad</a>.</p>
 
 <p>This assumes you already have a database configured and ready to create new tables and connect to with NHibernate.</p>
